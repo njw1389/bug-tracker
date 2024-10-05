@@ -10,8 +10,6 @@
     <div class="container">
         <h1>Welcome to Bug Tracker</h1>
 
-        <p><?php echo $dbConnectionStatus; ?></p>
-
         <div class="button-group">
             <a href="/admin" class="button">Sign in as Admin/Manager</a>
             <a href="/bug" class="button">Sign in as User</a>
