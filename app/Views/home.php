@@ -10,10 +10,21 @@
     <div class="container">
         <h1>Welcome to Bug Tracker</h1>
 
-        <div class="button-group">
-            <a href="/admin" class="button">Sign in as Admin/Manager</a>
-            <a href="/bug" class="button">Sign in as User</a>
-        </div>
+        <form action="/login" method="post" class="login-form">
+            <div class="form-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="button">Login</button>
+        </form>
+
+        <?php if (isset($error)): ?>
+            <p class="error"><?php echo htmlspecialchars($error); ?></p>
+        <?php endif; ?>
     </div>
 </body>
 </html>

@@ -15,12 +15,13 @@ class Router {
         if ($url === '') {
             $url = '/';
         }
-
+    
         if (array_key_exists($url, $this->routes)) {
-            $controller = $this->routes[$url]['controller'];
+            $controllerName = $this->routes[$url]['controller'];
             $action = $this->routes[$url]['action'];
             
-            $controller = new $controller();
+            $controllerName = "App\\Controllers\\" . $controllerName;
+            $controller = new $controllerName();
             $controller->$action();
         } else {
             throw new Exception("No route found for URL: $url");

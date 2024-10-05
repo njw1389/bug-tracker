@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
-    <h1>Admin Page</h1>
-    <p>This is a placeholder for the admin page.</p>
+    <div class="container">
+        <h1>Admin Page</h1>
+        <p>This is a placeholder for the admin page.</p>
+        <a href="/logout" class="button">Logout</a>
+    </div>
 </body>
 </html>

@@ -6,13 +6,13 @@ use App\Core\Database;
 
 class Project
 {
-    public $id;
-    public $project;
+    public $Id;
+    public $Project;
 
-    public static function findById($id)
+    public static function findById($Id)
     {
         $db = Database::getInstance();
-        return $db->fetch("SELECT * FROM project WHERE id = ?", [$id], self::class);
+        return $db->fetch("SELECT * FROM project WHERE Id = ?", [$Id], self::class);
     }
 
     public static function findAll()
@@ -24,12 +24,12 @@ class Project
     public function save()
     {
         $db = Database::getInstance();
-        if ($this->id) {
+        if ($this->Id) {
             // Update existing project
-            $db->query("UPDATE project SET project = ? WHERE id = ?", [$this->project, $this->id]);
+            $db->query("UPDATE project SET Project = ? WHERE Id = ?", [$this->Project, $this->Id]);
         } else {
             // Insert new project
-            $db->query("INSERT INTO project (project) VALUES (?)", [$this->project]);
+            $db->query("INSERT INTO project (Project) VALUES (?)", [$this->Project]);
             $this->id = $db->getConnection()->lastInsertId();
         }
     }
