@@ -23,7 +23,7 @@
         </form>
 
         <?php if (isset($error)): ?>
-            <p class="error"><?php echo htmlspecialchars($error); ?></p>
+            <p class="error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
     </div>
 </body>

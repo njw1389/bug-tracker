@@ -34,6 +34,20 @@ class Bug
     public function save()
     {
         $db = Database::getInstance();
+
+        // Validate and sanitize inputs
+        $this->projectId = filter_var($this->projectId, FILTER_VALIDATE_INT);
+        $this->ownerId = filter_var($this->ownerId, FILTER_VALIDATE_INT);
+        $this->assignedToId = filter_var($this->assignedToId, FILTER_VALIDATE_INT);
+        $this->statusId = filter_var($this->statusId, FILTER_VALIDATE_INT);
+        $this->priorityId = filter_var($this->priorityId, FILTER_VALIDATE_INT);
+        $this->summary = filter_var($this->summary, FILTER_SANITIZE_STRING);
+        $this->description = filter_var($this->description, FILTER_SANITIZE_STRING);
+        $this->fixDescription = filter_var($this->fixDescription, FILTER_SANITIZE_STRING);
+        $this->dateRaised = filter_var($this->dateRaised, FILTER_SANITIZE_STRING);
+        $this->targetDate = filter_var($this->targetDate, FILTER_SANITIZE_STRING);
+        $this->dateClosed = filter_var($this->dateClosed, FILTER_SANITIZE_STRING);
+
         if ($this->id) {
             // Update existing bug
             $db->query("UPDATE bugs SET projectId = ?, ownerId = ?, assignedToId = ?, statusId = ?, priorityId = ?, 

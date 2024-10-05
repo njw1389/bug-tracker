@@ -10,15 +10,20 @@ class AuthController
     public function login()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $username = $_POST['username'] ?? '';
-            $password = $_POST['password'] ?? '';
+            $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_STRING);
+            $password = filter_input(INPUT_POST, 'password', FILTER_UNSAFE_RAW);
+
+            if (!$username || !$password) {
+                $error = "Username and password are required";
+                require_once __DIR__ . '/../views/home.php';
+                return;
+            }
 
             $user = User::findByUsername($username);
 
             if ($user && password_verify($password, $user->Password)) {
                 SessionManager::login($user->Id, $user->RoleID);
                 SessionManager::start();
-                SessionManager::login($user->Id, $user->RoleID);
                 error_log("User logged in. ID: " . $user->Id . ", Role: " . $user->RoleID);
                 
                 if ($user->RoleID == 1 || $user->RoleID == 2) { // Admin or Manager
