@@ -31,6 +31,12 @@ class Bug
         return $db->fetchAll("SELECT * FROM bugs WHERE projectId = ?", [$projectId], self::class);
     }
 
+    public static function findAll()
+    {
+        $db = Database::getInstance();
+        return $db->fetchAll("SELECT * FROM bugs", [], self::class);
+    }
+
     public function save()
     {
         $db = Database::getInstance();

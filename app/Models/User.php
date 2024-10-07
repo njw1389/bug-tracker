@@ -13,6 +13,12 @@ class User
     public $Password;
     public $Name;
 
+    public static function findAll()
+    {
+        $db = Database::getInstance();
+        return $db->fetchAll("SELECT * FROM user_details", [], self::class);
+    }
+
     public static function findById($Id)
     {
         $db = Database::getInstance();
