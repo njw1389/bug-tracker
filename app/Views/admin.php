@@ -233,7 +233,7 @@
                         <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                         <td>
                             <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                            <a href="/bug/update?id=<?php echo $bug->id; ?>">Edit</a>
+                                <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -265,7 +265,7 @@
                         <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                         <td>
                             <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                            <a href="/bug/update?id=<?php echo $bug->id; ?>">Edit</a>
+                                <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -299,7 +299,7 @@
                         <td><?php echo $bug->targetDate; ?></td>
                         <td>
                             <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                            <a href="/bug/update?id=<?php echo $bug->id; ?>">Edit</a>
+                                <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -331,7 +331,7 @@
                         <td><?php echo $bug->priorityId; ?></td>
                         <td><?php echo $bug->dateRaised; ?></td>
                         <td>
-                            <a href="/bug/update?id=<?php echo $bug->id; ?>">Edit</a>
+                            <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                         </td>
                     </tr>
                     <?php endforeach; ?>
