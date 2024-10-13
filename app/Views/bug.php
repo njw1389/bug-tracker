@@ -152,7 +152,7 @@
 
         <section id="bug-management">
             <h2>My Bugs</h2>
-            <h3>All Bugs For <?php echo htmlspecialchars($projectsById[$user->ProjectId]->Project); ?></h3>
+            <h3>All My Bugs For <?php echo htmlspecialchars($projectsById[$user->ProjectId]->Project); ?></h3>
             <table>
                 <thead>
                     <tr>
