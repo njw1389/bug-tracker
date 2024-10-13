@@ -45,4 +45,9 @@ class User
             $this->id = $db->getConnection()->lastInsertId();
         }
     }
+
+    public function delete() {
+        $db = Database::getInstance();
+        $db->query("DELETE FROM user_details WHERE Id = ?", [$this->Id]);
+    }
 }

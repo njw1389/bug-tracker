@@ -33,6 +33,10 @@ $router->addRoute('admin', 'AdminController', 'index');
 $router->addRoute('bug', 'BugController', 'index');
 $router->addRoute('login', 'AuthController', 'login');
 $router->addRoute('logout', 'AuthController', 'logout');
+$router->addRoute('admin/saveUser', 'AdminController', 'saveUser');
+$router->addRoute('admin/deleteUser', 'AdminController', 'deleteUser');
+$router->addRoute('admin/saveProject', 'AdminController', 'saveProject');
+$router->addRoute('admin/saveBug', 'AdminController', 'saveBug');
 
 $url = $_SERVER['REQUEST_URI'];
 $url = strtok($url, '?'); // Remove query string if present

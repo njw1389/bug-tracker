@@ -98,6 +98,38 @@
             background-color: #27ae60;
         }
 
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 100%;
@@ -139,14 +171,14 @@
                             <td><?php echo $user->RoleID; ?></td>
                             <td><?php echo $user->ProjectId ? App\Models\Project::findById($user->ProjectId)->Project : 'N/A'; ?></td>
                             <td>
-                                <a href="/admin/editUser?id=<?php echo $user->Id; ?>">Edit</a>
-                                <a href="/admin/deleteUser?id=<?php echo $user->Id; ?>">Delete</a>
+                                <button onclick="openEditUserModal(<?php echo htmlspecialchars(json_encode($user)); ?>)">Edit</button>
+                                <button onclick="deleteUser(<?php echo $user->Id; ?>)">Delete</button>
                             </td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                 </table>
-                <a href="/admin/addUser" class="button">Add New User</a>
+                <button onclick="openAddUserModal()">Add New User</button>
             </section>
         <?php endif; ?>
 
@@ -166,13 +198,13 @@
                         <td><?php echo $project->Id; ?></td>
                         <td><?php echo $project->Project; ?></td>
                         <td>
-                            <a href="/admin/editProject?id=<?php echo $project->Id; ?>">Edit</a>
+                        <button onclick="openEditProjectModal(<?php echo htmlspecialchars(json_encode($project)); ?>)">Edit</button>
                         </td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
-            <a href="/admin/addProject" class="button">Add New Project</a>
+            <button onclick="openAddProjectModal()">Add New Project</button>
         </section>
 
         <section id="bug-management">
@@ -306,10 +338,272 @@
                 </tbody>
             </table>
             <?php endif; ?>
-            <a href="/bug/add" class="button">Add New Bug</a>
+            <button onclick="openAddBugModal()">Add New Bug</button>
         </section>
 
         <a href="/logout" class="button">Logout</a>
     </div>
+
+    <!-- Modals -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="userModalTitle">User</h2>
+            <form id="userForm">
+                <input type="hidden" id="userId" name="userId">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                <label for="roleId">Role:</label>
+                <select id="roleId" name="roleId" required>
+                    <option value="1">Admin</option>
+                    <option value="2">Manager</option>
+                    <option value="3">User</option>
+                </select>
+                <label for="projectId">Project:</label>
+                <select id="projectId" name="projectId">
+                    <option value="">None</option>
+                    <?php foreach ($projects as $project): ?>
+                        <option value="<?php echo $project->Id; ?>"><?php echo $project->Project; ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password">
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
+                <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="projectModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="projectModalTitle">Project</h2>
+            <form id="projectForm">
+                <input type="hidden" id="projectId" name="projectId">
+                <label for="projectName">Project Name:</label>
+                <input type="text" id="projectName" name="projectName" required>
+                <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="bugModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="bugModalTitle">Bug</h2>
+            <form id="bugForm">
+                <input type="hidden" id="bugId" name="bugId">
+                <label for="bugProjectId">Project:</label>
+                <select id="bugProjectId" name="bugProjectId" required>
+                    <?php foreach ($projects as $project): ?>
+                        <option value="<?php echo $project->Id; ?>"><?php echo $project->Project; ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <label for="summary">Summary:</label>
+                <input type="text" id="summary" name="summary" required>
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" required></textarea>
+                <label for="assignedToId">Assigned To:</label>
+                <select id="assignedToId" name="assignedToId">
+                    <option value="">Unassigned</option>
+                    <?php foreach ($users as $user): ?>
+                        <option value="<?php echo $user->Id; ?>"><?php echo $user->Name; ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <label for="statusId">Status:</label>
+                <select id="statusId" name="statusId" required>
+                    <option value="1">Unassigned</option>
+                    <option value="2">Assigned</option>
+                    <option value="3">Closed</option>
+                </select>
+                <label for="priorityId">Priority:</label>
+                <select id="priorityId" name="priorityId" required>
+                    <option value="1">Low</option>
+                    <option value="2">Medium</option>
+                    <option value="3">High</option>
+                    <option value="4">Urgent</option>
+                </select>
+                <label for="targetDate">Target Date:</label>
+                <input type="date" id="targetDate" name="targetDate">
+                <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Modal functionality
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = "block";
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = "none";
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            if (event.target.className === "modal") {
+                event.target.style.display = "none";
+            }
+        }
+
+        // Close buttons
+        var closeButtons = document.getElementsByClassName("close");
+        for (var i = 0; i < closeButtons.length; i++) {
+            closeButtons[i].onclick = function() {
+                this.parentElement.parentElement.style.display = "none";
+            }
+        }
+
+        // User management
+        function openAddUserModal() {
+            document.getElementById("userModalTitle").innerText = "Add User";
+            document.getElementById("userForm").reset();
+            document.getElementById("userId").value = "";
+            openModal("userModal");
+        }
+
+        function openEditUserModal(user) {
+            document.getElementById("userModalTitle").innerText = "Edit User";
+            document.getElementById("userId").value = user.Id;
+            document.getElementById("username").value = user.Username;
+            document.getElementById("roleId").value = user.RoleID;
+            document.getElementById("projectId").value = user.ProjectId || "";
+            document.getElementById("name").value = user.Name;
+            document.getElementById("password").value = "";
+            openModal("userModal");
+        }
+
+        function deleteUser(userId) {
+            if (confirm("Are you sure you want to delete this user?")) {
+                // Send delete request to server
+                fetch('/admin/deleteUser', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: userId }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("User deleted successfully");
+                        location.reload();
+                    } else {
+                        alert("Error deleting user: " + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while deleting the user");
+                });
+            }
+        }
+
+        // Project management
+        function openAddProjectModal() {
+            document.getElementById("projectModalTitle").innerText = "Add Project";
+            document.getElementById("projectForm").reset();
+            document.getElementById("projectId").value = "";
+            openModal("projectModal");
+        }
+
+        function openEditProjectModal(project) {
+            document.getElementById("projectModalTitle").innerText = "Edit Project";
+            document.getElementById("projectId").value = project.Id;
+            document.getElementById("projectName").value = project.Project;
+            openModal("projectModal");
+        }
+
+        // Bug management
+        function openAddBugModal() {
+            document.getElementById("bugModalTitle").innerText = "Add Bug";
+            document.getElementById("bugForm").reset();
+            document.getElementById("bugId").value = "";
+            openModal("bugModal");
+        }
+
+        function openEditBugModal(bug) {
+            document.getElementById("bugModalTitle").innerText = "Edit Bug";
+            // Populate form fields with bug data
+            document.getElementById("bugId").value = bug.id;
+            document.getElementById("bugProjectId").value = bug.projectId;
+            document.getElementById("summary").value = bug.summary;
+            document.getElementById("description").value = bug.description;
+            document.getElementById("assignedToId").value = bug.assignedToId || "";
+            document.getElementById("statusId").value = bug.statusId;
+            document.getElementById("priorityId").value = bug.priorityId;
+            document.getElementById("targetDate").value = bug.targetDate;
+            openModal("bugModal");
+        }
+
+        // Form submissions
+        document.getElementById("userForm").onsubmit = function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            fetch('/admin/saveUser', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("User saved successfully");
+                    location.reload();
+                } else {
+                    alert("Error saving user: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while saving the user");
+            });
+        };
+
+        document.getElementById("projectForm").onsubmit = function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            fetch('/admin/saveProject', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Project saved successfully");
+                    location.reload();
+                } else {
+                    alert("Error saving project: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while saving the project");
+            });
+        };
+
+        document.getElementById("bugForm").onsubmit = function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            fetch('/admin/saveBug', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Bug saved successfully");
+                    location.reload();
+                } else {
+                    alert("Error saving bug: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while saving the bug");
+            });
+        };
+    </script>
 </body>
 </html>

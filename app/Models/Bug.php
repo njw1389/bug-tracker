@@ -31,6 +31,11 @@ class Bug
         return $db->fetchAll("SELECT * FROM bugs WHERE projectId = ?", [$projectId], self::class);
     }
 
+    public static function unassignUserFromBugs($userId) {
+        $db = Database::getInstance();
+        $db->query("UPDATE bugs SET assignedToId = NULL WHERE assignedToId = ?", [$userId]);
+    }
+
     public static function findAll()
     {
         $db = Database::getInstance();
