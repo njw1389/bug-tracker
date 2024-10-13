@@ -210,36 +210,52 @@
         <section id="bug-management">
             <h2>Bug Management</h2>
             <h2>All Bugs</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Project</th>
-                        <th>Summary</th>
-                        <th>Status</th>
-                        <th>Priority</th>
-                        <th>Assigned To</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($bugs as $bug): ?>
-                    <tr>
-                        <td><?php echo $bug->id; ?></td>
-                        <td><?php echo isset($projectsById[$bug->projectId]) ? htmlspecialchars($projectsById[$bug->projectId]->Project) : 'Unknown Project'; ?></td>
-                        <td><?php echo htmlspecialchars($bug->summary); ?></td>
-                        <td><?php echo $bug->statusId; ?></td>
-                        <td><?php echo $bug->priorityId; ?></td>
-                        <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
-                        <td>
-                            <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                                <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
-                            <?php endif; ?>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+            <?php
+            // Insert the code from the artifact here
+            // Group bugs by project
+            $bugsByProject = [];
+            foreach ($bugs as $bug) {
+                $projectId = $bug->projectId;
+                if (!isset($bugsByProject[$projectId])) {
+                    $bugsByProject[$projectId] = [];
+                }
+                $bugsByProject[$projectId][] = $bug;
+            }
+
+            // Display bugs grouped by project
+            foreach ($bugsByProject as $projectId => $projectBugs):
+                $projectName = isset($projectsById[$projectId]) ? htmlspecialchars($projectsById[$projectId]->Project) : 'Unknown Project';
+            ?>
+                <h3><?php echo $projectName; ?></h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Summary</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Assigned To</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($projectBugs as $bug): ?>
+                        <tr>
+                            <td><?php echo $bug->id; ?></td>
+                            <td><?php echo htmlspecialchars($bug->summary); ?></td>
+                            <td><?php echo $bug->statusId; ?></td>
+                            <td><?php echo $bug->priorityId; ?></td>
+                            <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
+                            <td>
+                                <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
+                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
+                                <?php endif; ?>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endforeach; ?>
 
             <h3>Open Bugs</h3>
             <table>
