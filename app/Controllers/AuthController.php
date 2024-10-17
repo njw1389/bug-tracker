@@ -10,7 +10,7 @@ class AuthController
     public function login()
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $username = htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8');
+            $username = $_POST['username'] ?? '';
             $password = $_POST['password'] ?? '';
 
             if (!$username || !$password) {
@@ -21,7 +21,7 @@ class AuthController
 
             $user = User::findByUsername($username);
 
-            if ($user && password_verify($password, $user->Password)) {
+            if ($user && $user->Username === $username && password_verify($password, $user->Password)) {
                 SessionManager::login($user->Id, $user->RoleID);
                 SessionManager::start();
                 error_log("User logged in. ID: " . $user->Id . ", Role: " . $user->RoleID);

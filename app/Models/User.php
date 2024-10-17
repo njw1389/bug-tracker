@@ -41,6 +41,12 @@ class User
         $this->ProjectId = $this->ProjectId ? filter_var($this->ProjectId, FILTER_VALIDATE_INT) : null;
         $this->Name = htmlspecialchars($this->Name, ENT_QUOTES, 'UTF-8');
 
+        // Check for existing username
+        $existingUser = self::findByUsername($this->Username);
+        if ($existingUser && $existingUser->Id !== $this->Id) {
+            throw new \Exception("Username already exists");
+        }
+
         if ($this->Id) {
             // Update existing user
             $query = "UPDATE user_details SET username = ?, roleId = ?, projectId = ?, name = ?";

@@ -66,7 +66,7 @@ class AdminController {
         $user->RoleID = $roleId;
         $user->ProjectId = $projectId ?: null;
         if ($password) {
-            $user->Password = password_hash($password, PASSWORD_DEFAULT);
+            $user->Password = $password;
         }
         $user->Name = $name;
 

@@ -98,36 +98,103 @@
             background-color: #27ae60;
         }
 
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
-            z-index: 1;
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             overflow: auto;
             background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         .modal-content {
             background-color: #fefefe;
-            margin: 15% auto;
+            margin: 5% auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s;
         }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         .close {
             color: #aaa;
             float: right;
             font-size: 28px;
             font-weight: bold;
+            transition: color 0.3s;
         }
+
         .close:hover,
         .close:focus {
-            color: black;
+            color: #000;
             text-decoration: none;
             cursor: pointer;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .modal form {
+            display: grid;
+            gap: 15px;
+        }
+
+        .modal label {
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        .modal input[type="text"],
+        .modal input[type="password"],
+        .modal select,
+        .modal textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .modal textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal button[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .modal button[type="submit"]:hover {
+            background-color: #2980b9;
         }
 
         #session-expiration-banner {
@@ -143,6 +210,12 @@
             z-index: 1000;
         }
 
+        select:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 100%;
@@ -155,6 +228,11 @@
 
             th, td {
                 padding: 0.5rem;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
             }
         }
     </style>
@@ -383,14 +461,17 @@
             <h2 id="userModalTitle">User</h2>
             <form id="userForm">
                 <input type="hidden" id="userId" name="userId">
+                
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
+                
                 <label for="roleId">Role:</label>
-                <select id="roleId" name="roleId" required>
+                <select id="roleId" name="roleId" required onchange="updateProjectSelect()">
                     <option value="1">Admin</option>
                     <option value="2">Manager</option>
                     <option value="3">User</option>
                 </select>
+                
                 <label for="projectId">Project:</label>
                 <select id="projectId" name="projectId">
                     <option value="">None</option>
@@ -398,10 +479,13 @@
                         <option value="<?php echo $project->Id; ?>"><?php echo $project->Project; ?></option>
                     <?php endforeach; ?>
                 </select>
+                
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password">
+                
                 <label for="name">Name:</label>
                 <input type="text" id="name" name="name" required>
+                
                 <button type="submit">Save</button>
             </form>
         </div>
@@ -413,8 +497,10 @@
             <h2 id="projectModalTitle">Project</h2>
             <form id="projectForm">
                 <input type="hidden" id="projectId" name="projectId">
+                
                 <label for="projectName">Project Name:</label>
                 <input type="text" id="projectName" name="projectName" required>
+                
                 <button type="submit">Save</button>
             </form>
         </div>
@@ -426,16 +512,20 @@
             <h2 id="bugModalTitle">Bug</h2>
             <form id="bugForm">
                 <input type="hidden" id="bugId" name="bugId">
+                
                 <label for="bugProjectId">Project:</label>
                 <select id="bugProjectId" name="bugProjectId" required>
                     <?php foreach ($projects as $project): ?>
                         <option value="<?php echo $project->Id; ?>"><?php echo $project->Project; ?></option>
                     <?php endforeach; ?>
                 </select>
+                
                 <label for="summary">Summary:</label>
                 <input type="text" id="summary" name="summary" required>
+                
                 <label for="description">Description:</label>
                 <textarea id="description" name="description" required></textarea>
+                
                 <label for="assignedToId">Assigned To:</label>
                 <select id="assignedToId" name="assignedToId">
                     <option value="">Unassigned</option>
@@ -443,12 +533,14 @@
                         <option value="<?php echo $user->Id; ?>"><?php echo $user->Name; ?></option>
                     <?php endforeach; ?>
                 </select>
+                
                 <label for="statusId">Status:</label>
                 <select id="statusId" name="statusId" required>
                     <option value="1">Unassigned</option>
                     <option value="2">Assigned</option>
                     <option value="3">Closed</option>
                 </select>
+                
                 <label for="priorityId">Priority:</label>
                 <select id="priorityId" name="priorityId" required>
                     <option value="1">Low</option>
@@ -456,8 +548,10 @@
                     <option value="3">High</option>
                     <option value="4">Urgent</option>
                 </select>
+                
                 <label for="targetDate">Target Date:</label>
                 <input type="date" id="targetDate" name="targetDate">
+                
                 <button type="submit">Save</button>
             </form>
         </div>
@@ -489,10 +583,23 @@
         }
 
         // User management
+        function updateProjectSelect() {
+            var roleSelect = document.getElementById('roleId');
+            var projectSelect = document.getElementById('projectId');
+            
+            if (roleSelect.value === '1' || roleSelect.value === '2') {
+                projectSelect.value = '';
+                projectSelect.disabled = true;
+            } else {
+                projectSelect.disabled = false;
+            }
+        }
+
         function openAddUserModal() {
             document.getElementById("userModalTitle").innerText = "Add User";
             document.getElementById("userForm").reset();
             document.getElementById("userId").value = "";
+            updateProjectSelect(); // Ensure project select is properly set on open
             openModal("userModal");
         }
 
@@ -504,6 +611,7 @@
             document.getElementById("projectId").value = user.ProjectId || "";
             document.getElementById("name").value = user.Name;
             document.getElementById("password").value = "";
+            updateProjectSelect(); // Ensure project select is properly set on open
             openModal("userModal");
         }
 
@@ -645,7 +753,7 @@
             let now = Math.floor(Date.now() / 1000);
             let timeLeft = sessionExpirationTime - now;
 
-            if (timeLeft <= 180) { // Show banner when 5 minutes or less remain
+            if (timeLeft <= 180) { // Show banner when 3 minutes or less remain
                 document.getElementById('session-expiration-banner').style.display = 'block';
             }
 
@@ -678,6 +786,15 @@
         // Refresh session on user interaction
         document.addEventListener('click', refreshSession);
         document.addEventListener('keypress', refreshSession);
+
+        // Add event listeners for user modal
+        document.addEventListener('DOMContentLoaded', function() {
+            var roleSelect = document.getElementById('roleId');
+            roleSelect.addEventListener('change', updateProjectSelect);
+
+            var userModal = document.getElementById('userModal');
+            userModal.addEventListener('show', updateProjectSelect);
+        });
     </script>
 </body>
 </html>
