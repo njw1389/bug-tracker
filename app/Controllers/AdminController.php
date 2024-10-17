@@ -32,7 +32,7 @@ class AdminController {
         });
 
         $overdueBugs = array_filter($bugs, function($bug) {
-            return strtotime($bug->targetDate) < time() && $bug->statusId != 3;
+            return $bug->targetDate !== null && strtotime($bug->targetDate) < time() && $bug->statusId != 3;
         });
 
         $unassignedBugs = array_filter($bugs, function($bug) {
