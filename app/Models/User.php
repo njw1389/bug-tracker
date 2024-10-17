@@ -34,15 +34,40 @@ class User
     public function save()
     {
         $db = Database::getInstance();
+
+        // Sanitize and validate inputs
+        $this->Username = htmlspecialchars($this->Username, ENT_QUOTES, 'UTF-8');
+        $this->RoleID = filter_var($this->RoleID, FILTER_VALIDATE_INT);
+        $this->ProjectId = $this->ProjectId ? filter_var($this->ProjectId, FILTER_VALIDATE_INT) : null;
+        $this->Name = htmlspecialchars($this->Name, ENT_QUOTES, 'UTF-8');
+
         if ($this->Id) {
             // Update existing user
-            $db->query("UPDATE user_details SET username = ?, roleId = ?, projectId = ?, password = ?, name = ? WHERE id = ?",
-                [$this->Username, $this->RoleID, $this->ProjectId, $this->Password, $this->Name, $this->Id]);
+            $query = "UPDATE user_details SET username = ?, roleId = ?, projectId = ?, name = ?";
+            $params = [$this->Username, $this->RoleID, $this->ProjectId, $this->Name];
+
+            if ($this->Password) {
+                $query .= ", password = ?";
+                $params[] = password_hash($this->Password, PASSWORD_DEFAULT);
+            }
+
+            $query .= " WHERE id = ?";
+            $params[] = $this->Id;
+
+            $db->query($query, $params);
         } else {
             // Insert new user
-            $db->query("INSERT INTO user_details (username, roleId, projectId, password, name) VALUES (?, ?, ?, ?, ?)",
-                [$this->Username, $this->RoleID, $this->ProjectId, $this->Password, $this->Name]);
-            $this->id = $db->getConnection()->lastInsertId();
+            $query = "INSERT INTO user_details (username, roleId, projectId, password, name) VALUES (?, ?, ?, ?, ?)";
+            $params = [
+                $this->Username,
+                $this->RoleID,
+                $this->ProjectId,
+                password_hash($this->Password, PASSWORD_DEFAULT),
+                $this->Name
+            ];
+
+            $db->query($query, $params);
+            $this->Id = $db->getConnection()->lastInsertId();
         }
     }
 

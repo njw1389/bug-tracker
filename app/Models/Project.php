@@ -24,6 +24,10 @@ class Project
     public function save()
     {
         $db = Database::getInstance();
+
+        // Sanitize input
+        $this->Project = htmlspecialchars($this->Project, ENT_QUOTES, 'UTF-8');
+        
         if ($this->Id) {
             // Update existing project
             $db->query("UPDATE project SET Project = ? WHERE Id = ?", [$this->Project, $this->Id]);

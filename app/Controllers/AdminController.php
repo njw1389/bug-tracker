@@ -50,11 +50,11 @@ class AdminController {
         }
 
         $userId = filter_input(INPUT_POST, 'userId', FILTER_VALIDATE_INT);
-        $username = filter_input(INPUT_POST, 'username', FILTER_SANITIZE_STRING);
+        $username = htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8');
         $roleId = filter_input(INPUT_POST, 'roleId', FILTER_VALIDATE_INT);
         $projectId = filter_input(INPUT_POST, 'projectId', FILTER_VALIDATE_INT);
-        $password = filter_input(INPUT_POST, 'password', FILTER_UNSAFE_RAW);
-        $name = filter_input(INPUT_POST, 'name', FILTER_SANITIZE_STRING);
+        $password = $_POST['password'] ?? '';
+        $name = htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8');
 
         if (!$username || !$roleId || !$name) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields']);
@@ -119,7 +119,7 @@ class AdminController {
         }
 
         $projectId = filter_input(INPUT_POST, 'projectId', FILTER_VALIDATE_INT);
-        $projectName = filter_input(INPUT_POST, 'projectName', FILTER_SANITIZE_STRING);
+        $projectName = htmlspecialchars($_POST['projectName'] ?? '', ENT_QUOTES, 'UTF-8');
 
         if (!$projectName) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Project name is required']);
@@ -146,12 +146,12 @@ class AdminController {
 
         $bugId = filter_input(INPUT_POST, 'bugId', FILTER_VALIDATE_INT);
         $projectId = filter_input(INPUT_POST, 'bugProjectId', FILTER_VALIDATE_INT);
-        $summary = filter_input(INPUT_POST, 'summary', FILTER_SANITIZE_STRING);
-        $description = filter_input(INPUT_POST, 'description', FILTER_SANITIZE_STRING);
+        $summary = htmlspecialchars($_POST['summary'] ?? '', ENT_QUOTES, 'UTF-8');
+        $description = htmlspecialchars($_POST['description'] ?? '', ENT_QUOTES, 'UTF-8');
         $assignedToId = filter_input(INPUT_POST, 'assignedToId', FILTER_VALIDATE_INT);
         $statusId = filter_input(INPUT_POST, 'statusId', FILTER_VALIDATE_INT);
         $priorityId = filter_input(INPUT_POST, 'priorityId', FILTER_VALIDATE_INT);
-        $targetDate = filter_input(INPUT_POST, 'targetDate', FILTER_SANITIZE_STRING);
+        $targetDate = htmlspecialchars($_POST['targetDate'] ?? '', ENT_QUOTES, 'UTF-8');
 
         if (!$projectId || !$summary || !$description || !$statusId || !$priorityId) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields']);

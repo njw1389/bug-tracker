@@ -27,7 +27,12 @@ class BugController {
         });
 
         $overdueBugs = $this->filterBugs($bugs, function($bug) {
-            return strtotime($bug->targetDate) < time() && $bug->statusId != 3;
+            // Check if targetDate is not null and not empty before using strtotime
+            if (!empty($bug->targetDate)) {
+                $targetTimestamp = strtotime($bug->targetDate);
+                return $targetTimestamp !== false && $targetTimestamp < time() && $bug->statusId != 3;
+            }
+            return false; // If no target date, it's not overdue
         });
 
         $projectsById = [];
@@ -61,12 +66,13 @@ class BugController {
 
         $bugId = filter_input(INPUT_POST, 'bugId', FILTER_VALIDATE_INT);
         $projectId = filter_input(INPUT_POST, 'bugProjectId', FILTER_VALIDATE_INT);
-        $summary = filter_input(INPUT_POST, 'summary', FILTER_SANITIZE_STRING);
-        $description = filter_input(INPUT_POST, 'description', FILTER_SANITIZE_STRING);
+        $summary = htmlspecialchars($_POST['summary'] ?? '', ENT_QUOTES, 'UTF-8');
+        $description = htmlspecialchars($_POST['description'] ?? '', ENT_QUOTES, 'UTF-8');
         $assignedToId = filter_input(INPUT_POST, 'assignedToId', FILTER_VALIDATE_INT);
         $statusId = filter_input(INPUT_POST, 'statusId', FILTER_VALIDATE_INT);
         $priorityId = filter_input(INPUT_POST, 'priorityId', FILTER_VALIDATE_INT);
-        $targetDate = filter_input(INPUT_POST, 'targetDate', FILTER_SANITIZE_STRING);
+        $targetDate = htmlspecialchars($_POST['targetDate'] ?? '', ENT_QUOTES, 'UTF-8');
+
 
         $userId = SessionManager::get('user_id');
         $userRole = SessionManager::get('role');

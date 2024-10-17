@@ -72,12 +72,23 @@
             text-align: center;
             margin-top: 1rem;
         }
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Welcome to Bug Tracker</h1>
-
         <form action="/login" method="post" class="login-form">
             <div class="form-group">
                 <label for="username">Username:</label>
@@ -85,14 +96,25 @@
             </div>
             <div class="form-group">
                 <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required>
+                <div class="password-container">
+                    <input type="password" id="password" name="password" required>
+                    <button type="button" id="password-toggle" class="password-toggle">👁️</button>
+                </div>
             </div>
             <button type="submit" class="button">Login</button>
         </form>
-
         <?php if (isset($error)): ?>
             <p class="error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
         <?php endif; ?>
     </div>
+
+    <script>
+        document.getElementById('password-toggle').addEventListener('click', function() {
+            var passwordInput = document.getElementById('password');
+            var type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+        });
+    </script>
 </body>
 </html>

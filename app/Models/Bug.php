@@ -55,33 +55,64 @@ class Bug
         // Validate and sanitize inputs
         $this->projectId = filter_var($this->projectId, FILTER_VALIDATE_INT);
         $this->ownerId = filter_var($this->ownerId, FILTER_VALIDATE_INT);
-        $this->assignedToId = filter_var($this->assignedToId, FILTER_VALIDATE_INT);
+        $this->assignedToId = $this->assignedToId ? filter_var($this->assignedToId, FILTER_VALIDATE_INT) : null;
         $this->statusId = filter_var($this->statusId, FILTER_VALIDATE_INT);
         $this->priorityId = filter_var($this->priorityId, FILTER_VALIDATE_INT);
-        $this->summary = filter_var($this->summary, FILTER_SANITIZE_STRING);
-        $this->description = filter_var($this->description, FILTER_SANITIZE_STRING);
-        $this->fixDescription = filter_var($this->fixDescription, FILTER_SANITIZE_STRING);
-        $this->dateRaised = filter_var($this->dateRaised, FILTER_SANITIZE_STRING);
-        $this->targetDate = filter_var($this->targetDate, FILTER_SANITIZE_STRING);
-        $this->dateClosed = filter_var($this->dateClosed, FILTER_SANITIZE_STRING);
+        $this->summary = htmlspecialchars($this->summary, ENT_QUOTES, 'UTF-8');
+        $this->description = htmlspecialchars($this->description, ENT_QUOTES, 'UTF-8');
+        $this->fixDescription = $this->fixDescription ? htmlspecialchars($this->fixDescription, ENT_QUOTES, 'UTF-8') : null;
+        $this->dateRaised = $this->validateDate($this->dateRaised);
+        $this->targetDate = !empty($this->targetDate) ? $this->validateDate($this->targetDate) : null;
+        $this->dateClosed = $this->validateDate($this->dateClosed);
 
-        if ($this->id) {
-            // Update existing bug
-            $db->query("UPDATE bugs SET projectId = ?, ownerId = ?, assignedToId = ?, statusId = ?, priorityId = ?, 
-                        summary = ?, description = ?, fixDescription = ?, dateRaised = ?, targetDate = ?, dateClosed = ? 
-                        WHERE id = ?",
-                [$this->projectId, $this->ownerId, $this->assignedToId, $this->statusId, $this->priorityId,
-                 $this->summary, $this->description, $this->fixDescription, $this->dateRaised, $this->targetDate,
-                 $this->dateClosed, $this->id]);
-        } else {
-            // Insert new bug
-            $db->query("INSERT INTO bugs (projectId, ownerId, assignedToId, statusId, priorityId, summary, description, 
-                        fixDescription, dateRaised, targetDate, dateClosed) 
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                [$this->projectId, $this->ownerId, $this->assignedToId, $this->statusId, $this->priorityId,
-                 $this->summary, $this->description, $this->fixDescription, $this->dateRaised, $this->targetDate,
-                 $this->dateClosed]);
-            $this->id = $db->getConnection()->lastInsertId();
+        // Validate required fields
+        if (!$this->projectId || !$this->ownerId || !$this->statusId || !$this->priorityId || !$this->summary || !$this->description) {
+            throw new \InvalidArgumentException("Missing required fields");
         }
+
+        try {
+            if ($this->id) {
+                // Update existing bug
+                $query = "UPDATE bugs SET 
+                    projectId = ?, ownerId = ?, assignedToId = ?, statusId = ?, priorityId = ?,
+                    summary = ?, description = ?, fixDescription = ?, dateRaised = ?, targetDate = ?, dateClosed = ?
+                    WHERE id = ?";
+                $params = [
+                    $this->projectId, $this->ownerId, $this->assignedToId, $this->statusId, $this->priorityId,
+                    $this->summary, $this->description, $this->fixDescription, $this->dateRaised, $this->targetDate,
+                    $this->dateClosed, $this->id
+                ];
+                $db->query($query, $params);
+            } else {
+                // Insert new bug
+                $query = "INSERT INTO bugs 
+                    (projectId, ownerId, assignedToId, statusId, priorityId, summary, description,
+                    fixDescription, dateRaised, targetDate, dateClosed)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                $params = [
+                    $this->projectId, $this->ownerId, $this->assignedToId, $this->statusId, $this->priorityId,
+                    $this->summary, $this->description, $this->fixDescription, $this->dateRaised, $this->targetDate,
+                    $this->dateClosed
+                ];
+                $db->query($query, $params);
+                $this->id = $db->getConnection()->lastInsertId();
+            }
+        } catch (\PDOException $e) {
+            // Log the error and throw a generic exception
+            error_log("Database error: " . $e->getMessage());
+            throw new \Exception("An error occurred while saving the bug");
+        }
+    }
+
+    private function validateDate($date)
+    {
+        if (!$date) {
+            return null;
+        }
+        $timestamp = strtotime($date);
+        if ($timestamp === false) {
+            throw new \InvalidArgumentException("Invalid date format");
+        }
+        return date('Y-m-d H:i:s', $timestamp);
     }
 }
