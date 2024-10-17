@@ -1,0 +1,1 @@
+a:2:{s:5:"value";O:15:"App\Models\User":6:{s:2:"Id";i:5;s:8:"Username";s:13:"regular_user2";s:6:"RoleID";i:3;s:9:"ProjectId";i:2;s:8:"Password";s:60:"$2y$10$YPaFUCBTWuLS0NmJuoMP6.WsnZXGcQ5hQ8oqQpRUgSNZu92ccoLjK";s:4:"Name";s:14:"Regular User 2";}s:6:"expiry";i:1729806663;}

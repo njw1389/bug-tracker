@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Core\Database;
+use App\Core\FileCache as Cache;
 
 class Project
 {
@@ -11,14 +12,38 @@ class Project
 
     public static function findById($Id)
     {
+        $cacheKey = "project_$Id";
+        $cachedProject = Cache::get($cacheKey);
+        
+        if ($cachedProject !== false) {
+            return $cachedProject;
+        }
+
         $db = Database::getInstance();
-        return $db->fetch("SELECT * FROM project WHERE Id = ?", [$Id], self::class);
+        $project = $db->fetch("SELECT * FROM project WHERE Id = ?", [$Id], self::class);
+        
+        if ($project) {
+            Cache::set($cacheKey, $project);
+        }
+
+        return $project;
     }
 
     public static function findAll()
     {
+        $cacheKey = "all_projects";
+        $cachedProjects = Cache::get($cacheKey);
+        
+        if ($cachedProjects !== false) {
+            return $cachedProjects;
+        }
+
         $db = Database::getInstance();
-        return $db->fetchAll("SELECT * FROM project", [], self::class);
+        $projects = $db->fetchAll("SELECT * FROM project", [], self::class);
+        
+        Cache::set($cacheKey, $projects);
+
+        return $projects;
     }
 
     public function save()
@@ -34,7 +59,11 @@ class Project
         } else {
             // Insert new project
             $db->query("INSERT INTO project (Project) VALUES (?)", [$this->Project]);
-            $this->id = $db->getConnection()->lastInsertId();
+            $this->Id = $db->getConnection()->lastInsertId();
         }
+
+        // Clear relevant caches
+        Cache::delete("project_" . $this->Id);
+        Cache::delete("all_projects");
     }
 }
