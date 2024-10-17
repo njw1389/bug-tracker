@@ -4,7 +4,7 @@ namespace App\Core;
 
 class SessionManager
 {
-    const SESSION_TIMEOUT = 1800; // 30 minutes in seconds
+    const SESSION_TIMEOUT = 200; // 30 minutes in seconds is 1800
 
     public static function start()
     {
@@ -72,4 +72,9 @@ class SessionManager
     {
         self::destroy();
     }
+
+    public static function getSessionExpirationTime()
+    {
+        return $_SESSION['last_activity'] + self::SESSION_TIMEOUT;
+    } 
 }

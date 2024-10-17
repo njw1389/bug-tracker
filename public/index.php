@@ -39,6 +39,7 @@ $router->addRoute('admin/saveProject', 'AdminController', 'saveProject');
 $router->addRoute('admin/saveBug', 'AdminController', 'saveBug');
 $router->addRoute('bug', 'BugController', 'index');
 $router->addRoute('bug/saveBug', 'BugController', 'saveBug');
+$router->addRoute('refresh-session', 'AuthController', 'refreshSession');
 
 $url = $_SERVER['REQUEST_URI'];
 $url = strtok($url, '?'); // Remove query string if present

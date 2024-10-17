@@ -130,6 +130,19 @@
             cursor: pointer;
         }
 
+        #session-expiration-banner {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background-color: #f8d7da;
+            color: #721c24;
+            text-align: center;
+            padding: 10px;
+            z-index: 1000;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 100%;
@@ -147,6 +160,9 @@
     </style>
 </head>
 <body>
+    <div id="session-expiration-banner">
+        Your session will expire in <span id="session-countdown"></span>
+    </div>
     <div class="container">
         <h1>Admin Page</h1>
 
@@ -620,6 +636,48 @@
                 alert("An error occurred while saving the bug");
             });
         };
+
+        // Session expiration countdown
+        let sessionExpirationTime = <?php echo json_encode(App\Core\SessionManager::getSessionExpirationTime()); ?>;
+        let countdownInterval;
+
+        function updateSessionCountdown() {
+            let now = Math.floor(Date.now() / 1000);
+            let timeLeft = sessionExpirationTime - now;
+
+            if (timeLeft <= 180) { // Show banner when 5 minutes or less remain
+                document.getElementById('session-expiration-banner').style.display = 'block';
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(countdownInterval);
+                window.location.href = '/logout';
+                return;
+            }
+
+            let minutes = Math.floor(timeLeft / 60);
+            let seconds = timeLeft % 60;
+            document.getElementById('session-countdown').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function refreshSession() {
+            fetch('/refresh-session', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        sessionExpirationTime = data.newExpirationTime;
+                        document.getElementById('session-expiration-banner').style.display = 'none';
+                    }
+                });
+        }
+
+        // Start countdown
+        countdownInterval = setInterval(updateSessionCountdown, 1000);
+
+        // Refresh session on user interaction
+        document.addEventListener('click', refreshSession);
+        document.addEventListener('keypress', refreshSession);
     </script>
 </body>
 </html>

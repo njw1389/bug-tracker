@@ -47,4 +47,16 @@ class AuthController
         header('Location: /');
         exit;
     }
+
+    public function refreshSession()
+    {
+        SessionManager::start();
+        if (SessionManager::isLoggedIn()) {
+            SessionManager::refreshSession();
+            $newExpirationTime = SessionManager::getSessionExpirationTime();
+            echo json_encode(['success' => true, 'newExpirationTime' => $newExpirationTime]);
+        } else {
+            echo json_encode(['success' => false]);
+        }
+    }
 }
