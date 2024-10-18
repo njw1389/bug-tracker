@@ -899,7 +899,7 @@
         let scrollTimeout;
         window.addEventListener('scroll', function() {
             clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(refreshSession, 1000); // Debounce scroll events
+            scrollTimeout = setTimeout(refreshSession, 0); // Debounce scroll events
         });
 
         // Add event listeners for user modal
