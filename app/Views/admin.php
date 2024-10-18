@@ -896,6 +896,12 @@
         document.addEventListener('click', refreshSession);
         document.addEventListener('keypress', refreshSession);
 
+        let scrollTimeout;
+        window.addEventListener('scroll', function() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(refreshSession, 1000); // Debounce scroll events
+        });
+
         // Add event listeners for user modal
         document.addEventListener('DOMContentLoaded', function() {
             var roleSelect = document.getElementById('roleId');
