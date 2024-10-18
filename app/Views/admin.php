@@ -572,7 +572,9 @@
                 <select id="assignedToId" name="assignedToId">
                     <option value="">Unassigned</option>
                     <?php foreach ($users as $user): ?>
-                        <option value="<?php echo $user->Id; ?>"><?php echo $user->Name; ?></option>
+                        <?php if ($user->RoleID == 3): ?>
+                            <option value="<?php echo $user->Id; ?>"><?php echo $user->Name; ?></option>
+                        <?php endif; ?>
                     <?php endforeach; ?>
                 </select>
                 
@@ -901,6 +903,34 @@
 
             var userModal = document.getElementById('userModal');
             userModal.addEventListener('show', updateProjectSelect);
+        });
+
+        // Add this new code for the bug form functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const assignedToSelect = document.getElementById('assignedToId');
+            const statusSelect = document.getElementById('statusId');
+
+            assignedToSelect.addEventListener('change', function() {
+                if (this.value) {
+                    // If a user is assigned, set status to "Assigned"
+                    statusSelect.value = "2";
+                } else {
+                    // If unassigned, set status to "Unassigned"
+                    statusSelect.value = "1";
+                }
+            });
+
+            statusSelect.addEventListener('change', function() {
+                if (this.value === "1") {
+                    // If status is set to "Unassigned", clear the assigned user
+                    assignedToSelect.value = "";
+                } else if (this.value === "2" && !assignedToSelect.value) {
+                    // If status is set to "Assigned" but no user is assigned, prompt to select a user
+                    alert("Please assign a user to this bug.");
+                    this.value = "1"; // Reset status to "Unassigned"
+                }
+                // Note: We don't change anything if status is set to "Closed" (3)
+            });
         });
     </script>
 </body>
