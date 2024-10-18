@@ -87,6 +87,7 @@ class AdminController {
 
         $data = json_decode(file_get_contents('php://input'), true);
         $userId = filter_var($data['userId'] ?? null, FILTER_VALIDATE_INT);
+        $isSelf = $data['isSelf'] ?? false;
 
         if (!$userId) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Invalid user ID']);
@@ -104,6 +105,11 @@ class AdminController {
             
             // Delete the user
             $user->delete();
+            
+            if ($isSelf) {
+                // If the admin is deleting themselves, destroy the session
+                SessionManager::destroy();
+            }
             
             $this->sendJsonResponse(['success' => true]);
         } catch (\Exception $e) {

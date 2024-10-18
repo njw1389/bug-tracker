@@ -98,7 +98,7 @@
                 <label for="password">Password:</label>
                 <div class="password-container">
                     <input type="password" id="password" name="password" required>
-                    <button type="button" id="password-toggle" class="password-toggle">👁️</button>
+                    <button type="button" id="password-toggle" class="password-toggle">👓</button>
                 </div>
             </div>
             <button type="submit" class="button">Login</button>
@@ -113,7 +113,7 @@
             var passwordInput = document.getElementById('password');
             var type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
             passwordInput.setAttribute('type', type);
-            this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+            this.textContent = type === 'password' ? '👓' : '🕶️';
         });
     </script>
 </body>

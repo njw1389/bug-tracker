@@ -216,6 +216,27 @@
             opacity: 0.6;
         }
 
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        .password-requirements {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+        .invalid {
+            color: #e74c3c;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 100%;
@@ -461,6 +482,9 @@
             <h2 id="userModalTitle">User</h2>
             <form id="userForm">
                 <input type="hidden" id="userId" name="userId">
+
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name" required>
                 
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
@@ -481,10 +505,28 @@
                 </select>
                 
                 <label for="password">Password:</label>
-                <input type="password" id="password" name="password">
-                
-                <label for="name">Name:</label>
-                <input type="text" id="name" name="name" required>
+                <div class="password-container">
+                    <input type="password" id="password" name="password">
+                    <button type="button" id="password-toggle" class="password-toggle">👓</button>
+                </div>
+
+                <label for="confirm-password">Confirm Password:</label>
+                <div class="password-container">
+                    <input type="password" id="confirm-password" name="confirm-password">
+                    <button type="button" id="confirm-password-toggle" class="password-toggle">👓</button>
+                </div>
+
+                <div id="password-requirements" class="password-requirements">
+                    Password must contain:
+                    <ul>
+                        <li id="length">At least 8 characters</li>
+                        <li id="uppercase">At least one uppercase letter</li>
+                        <li id="lowercase">At least one lowercase letter</li>
+                        <li id="number">At least one number</li>
+                        <li id="special">At least one special character</li>
+                        <li id="match">Passwords must match</li>
+                    </ul>
+                </div>
                 
                 <button type="submit">Save</button>
             </form>
@@ -582,6 +624,51 @@
             }
         }
 
+        // Password visibility toggle
+        function togglePasswordVisibility(inputId, toggleId) {
+            var input = document.getElementById(inputId);
+            var toggle = document.getElementById(toggleId);
+            var type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+            input.setAttribute('type', type);
+            toggle.textContent = type === 'password' ? '👓' : '🕶️';
+        }
+
+        document.getElementById('password-toggle').addEventListener('click', function() {
+            togglePasswordVisibility('password', 'password-toggle');
+        });
+
+        document.getElementById('confirm-password-toggle').addEventListener('click', function() {
+            togglePasswordVisibility('confirm-password', 'confirm-password-toggle');
+        });
+
+        // Password requirements check
+        function checkPasswordRequirements() {
+            var password = document.getElementById('password').value;
+            var confirmPassword = document.getElementById('confirm-password').value;
+            var requirements = {
+                length: password.length >= 8,
+                uppercase: /[A-Z]/.test(password),
+                lowercase: /[a-z]/.test(password),
+                number: /[0-9]/.test(password),
+                special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
+                match: password === confirmPassword && password !== ''
+            };
+
+            for (var req in requirements) {
+                var element = document.getElementById(req);
+                if (requirements[req]) {
+                    element.classList.remove('invalid');
+                } else {
+                    element.classList.add('invalid');
+                }
+            }
+
+            return Object.values(requirements).every(Boolean);
+        }
+
+        document.getElementById('password').addEventListener('input', checkPasswordRequirements);
+        document.getElementById('confirm-password').addEventListener('input', checkPasswordRequirements);
+
         // User management
         function updateProjectSelect() {
             var roleSelect = document.getElementById('roleId');
@@ -616,29 +703,45 @@
         }
 
         function deleteUser(userId) {
-            if (confirm("Are you sure you want to delete this user?")) {
-                // Send delete request to server
-                fetch('/admin/deleteUser', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ userId: userId }),
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("User deleted successfully");
-                        location.reload();
-                    } else {
-                        alert("Error deleting user: " + data.message);
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    alert("An error occurred while deleting the user");
-                });
+            var currentUserId = <?php echo json_encode(App\Core\SessionManager::get('user_id')); ?>;
+            if (userId == currentUserId) {
+                if (confirm("Are you sure you want to delete your own account? This action will log you out and delete all your data. This cannot be undone.")) {
+                    // Send delete request to server
+                    performDeleteUser(userId, true);
+                }
+            } else {
+                if (confirm("Are you sure you want to delete this user?")) {
+                    // Send delete request to server
+                    performDeleteUser(userId, false);
+                }
             }
+        }
+
+        function performDeleteUser(userId, isSelf) {
+            fetch('/admin/deleteUser', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId: userId, isSelf: isSelf }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("User deleted successfully");
+                    if (isSelf) {
+                        window.location.href = '/logout';
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert("Error deleting user: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while deleting the user");
+            });
         }
 
         // Project management
@@ -681,24 +784,28 @@
         // Form submissions
         document.getElementById("userForm").onsubmit = function(e) {
             e.preventDefault();
-            var formData = new FormData(this);
-            fetch('/admin/saveUser', {
-                method: 'POST',
-                body: formData
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert("User saved successfully");
-                    location.reload();
-                } else {
-                    alert("Error saving user: " + data.message);
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert("An error occurred while saving the user");
-            });
+            if (checkPasswordRequirements()) {
+                var formData = new FormData(this);
+                fetch('/admin/saveUser', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("User saved successfully");
+                        location.reload();
+                    } else {
+                        alert("Error saving user: " + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while saving the user");
+                });
+            } else {
+                alert("Please meet all password requirements before submitting.");
+            }
         };
 
         document.getElementById("projectForm").onsubmit = function(e) {
