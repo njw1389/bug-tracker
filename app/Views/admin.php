@@ -869,7 +869,7 @@
             let now = Math.floor(Date.now() / 1000);
             let timeLeft = sessionExpirationTime - now;
 
-            if (timeLeft <= 180) { // Show banner when 3 minutes or less remain
+            if (timeLeft <= 900) { // Show banner when 3 minutes or less remain
                 document.getElementById('session-expiration-banner').style.display = 'block';
             }
 

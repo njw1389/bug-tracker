@@ -4,7 +4,7 @@ namespace App\Core;
 
 class SessionManager
 {
-    const SESSION_TIMEOUT = 200; // 30 minutes in seconds is 1800
+    const SESSION_TIMEOUT = 902; // Seconds
 
     public static function start()
     {
