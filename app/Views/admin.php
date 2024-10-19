@@ -314,6 +314,10 @@
                         <td><?php echo $project->Project; ?></td>
                         <td>
                         <button onclick="openEditProjectModal(<?php echo htmlspecialchars(json_encode($project)); ?>)">Edit</button>
+                        <?php if ($userRole == 1): ?>
+                            <button onclick="deleteProject(<?php echo $project->Id; ?>, '<?php echo htmlspecialchars(addslashes($project->Project), ENT_QUOTES); ?>')">Delete</button>
+                        <?php endif; ?>
+                        
                         </td>
                     </tr>
                     <?php endforeach; ?>
@@ -364,6 +368,9 @@
                             <td>
                                 <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
                                     <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
+                                <?php endif; ?>
+                                <?php if ($userRole == 1): ?>
+                                    <button onclick="deleteBug(<?php echo $bug->id; ?>)">Delete</button>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -889,6 +896,56 @@
                 });
         }
 
+        function deleteProject(projectId, projectName) {
+            if (confirm(`Are you sure you want to delete the project "${projectName}" (ID: ${projectId})? This will also delete all associated bugs. This action cannot be undone.`)) {
+                fetch('/admin/deleteProject', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ projectId: projectId }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Project "${projectName}" (ID: ${projectId}) deleted successfully`);
+                        location.reload();
+                    } else {
+                        alert("Error deleting project: " + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while deleting the project");
+                });
+            }
+        }
+
+        function deleteBug(bugId, bugSummary) {
+            if (confirm(`Are you sure you want to delete the bug (ID: ${bugId})? This action cannot be undone.`)) {
+                fetch('/admin/deleteBug', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ bugId: bugId }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`Bug "${bugSummary}" (ID: ${bugId}) deleted successfully`);
+                        location.reload();
+                    } else {
+                        alert("Error deleting bug: " + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while deleting the bug");
+                });
+            }
+        }
+
         // Start countdown
         countdownInterval = setInterval(updateSessionCountdown, 1000);
 
@@ -900,6 +957,19 @@
         window.addEventListener('scroll', function() {
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(refreshSession, 0); // Debounce scroll events
+        });
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', function(event) {
+                if (event.target === this || event.target.classList.contains('close')) {
+                    refreshSession();
+                }
+            });
+
+            modal.querySelectorAll('input, select, textarea, button').forEach(element => {
+                element.addEventListener('click', refreshSession);
+                element.addEventListener('keypress', refreshSession);
+            });
         });
 
         // Add event listeners for user modal

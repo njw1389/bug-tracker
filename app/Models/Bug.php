@@ -91,6 +91,50 @@ class Bug
         }
     }
 
+    public function delete()
+    {
+        $db = Database::getInstance();
+
+        try {
+            $db->query("DELETE FROM bugs WHERE id = ?", [$this->id]);
+
+            // Clear relevant caches
+            Cache::delete("bug_" . $this->id);
+            Cache::delete("project_bugs_" . $this->projectId);
+            Cache::delete("user_bugs_{$this->assignedToId}_{$this->projectId}");
+            Cache::delete("all_bugs");
+
+            return true;
+        } catch (\PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            throw new \Exception("An error occurred while deleting the bug");
+        }
+    }
+
+    public static function deleteByProject($projectId)
+    {
+        $db = Database::getInstance();
+
+        try {
+            $db->query("DELETE FROM bugs WHERE projectId = ?", [$projectId]);
+
+            // Clear relevant caches
+            Cache::delete("project_bugs_" . $projectId);
+            Cache::delete("all_bugs");
+
+            // Clear user-specific bug caches
+            $users = User::findAll();
+            foreach ($users as $user) {
+                Cache::delete("user_bugs_{$user->Id}_{$projectId}");
+            }
+
+            return true;
+        } catch (\PDOException $e) {
+            error_log("Database error: " . $e->getMessage());
+            throw new \Exception("An error occurred while deleting bugs for the project");
+        }
+    }
+
 
     public static function findAll()
     {

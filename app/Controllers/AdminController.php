@@ -117,6 +117,69 @@ class AdminController {
         }
     }
 
+    public function deleteProject() {
+        SessionManager::start();
+        if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 1) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $projectId = filter_var($data['projectId'] ?? null, FILTER_VALIDATE_INT);
+
+        if (!$projectId) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Invalid project ID']);
+            return;
+        }
+
+        try {
+            $project = Project::findById($projectId);
+            if (!$project) {
+                throw new \Exception('Project not found');
+            }
+            
+            // Delete all bugs associated with this project
+            Bug::deleteByProject($projectId);
+            
+            // Delete the project
+            $project->delete();
+            
+            $this->sendJsonResponse(['success' => true]);
+        } catch (\Exception $e) {
+            $this->sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
+    public function deleteBug() {
+        SessionManager::start();
+        if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 1) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $bugId = filter_var($data['bugId'] ?? null, FILTER_VALIDATE_INT);
+
+        if (!$bugId) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Invalid bug ID']);
+            return;
+        }
+
+        try {
+            $bug = Bug::findById($bugId);
+            if (!$bug) {
+                throw new \Exception('Bug not found');
+            }
+            
+            // Delete the bug
+            $bug->delete();
+            
+            $this->sendJsonResponse(['success' => true]);
+        } catch (\Exception $e) {
+            $this->sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
     public function saveProject() {
         SessionManager::start();
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') > 2) {
