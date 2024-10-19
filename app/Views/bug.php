@@ -443,7 +443,7 @@
         document.getElementById("bugForm").onsubmit = function(e) {
             e.preventDefault();
             var formData = new FormData(this);
-            fetch('/admin/saveBug', {
+            fetch('/bug/saveBug', {
                 method: 'POST',
                 body: formData
             })
