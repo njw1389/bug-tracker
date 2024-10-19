@@ -170,7 +170,7 @@
         .modal input[type="password"],
         .modal select,
         .modal textarea {
-            width: 100%;
+            width: 97%;
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -957,19 +957,6 @@
         window.addEventListener('scroll', function() {
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(refreshSession, 0); // Debounce scroll events
-        });
-
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', function(event) {
-                if (event.target === this || event.target.classList.contains('close')) {
-                    refreshSession();
-                }
-            });
-
-            modal.querySelectorAll('input, select, textarea, button').forEach(element => {
-                element.addEventListener('click', refreshSession);
-                element.addEventListener('keypress', refreshSession);
-            });
         });
 
         // Add event listeners for user modal
