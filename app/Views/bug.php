@@ -98,36 +98,103 @@
             background-color: #27ae60;
         }
 
+        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
-            z-index: 1;
+            z-index: 1000;
             left: 0;
             top: 0;
             width: 100%;
             height: 100%;
             overflow: auto;
             background-color: rgba(0,0,0,0.4);
+            animation: fadeIn 0.3s;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
         .modal-content {
             background-color: #fefefe;
-            margin: 15% auto;
+            margin: 5% auto;
             padding: 20px;
             border: 1px solid #888;
-            width: 80%;
-            max-width: 500px;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            animation: slideIn 0.3s;
         }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
         .close {
             color: #aaa;
             float: right;
             font-size: 28px;
             font-weight: bold;
+            transition: color 0.3s;
         }
+
         .close:hover,
         .close:focus {
-            color: black;
+            color: #000;
             text-decoration: none;
             cursor: pointer;
+        }
+
+        .modal h2 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .modal form {
+            display: grid;
+            gap: 15px;
+        }
+
+        .modal label {
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        .modal input[type="text"],
+        .modal input[type="password"],
+        .modal select,
+        .modal textarea {
+            width: 97%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .modal textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal button[type="submit"] {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+
+        .modal button[type="submit"]:hover {
+            background-color: #2980b9;
         }
 
         #session-expiration-banner {
@@ -143,6 +210,12 @@
             z-index: 1000;
         }
 
+        select:disabled {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 100%;
@@ -155,6 +228,11 @@
 
             th, td {
                 padding: 0.5rem;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
             }
         }
     </style>
@@ -361,11 +439,11 @@
             openModal("bugModal");
         }
 
-        // Form submission
+        // Form Submission
         document.getElementById("bugForm").onsubmit = function(e) {
             e.preventDefault();
             var formData = new FormData(this);
-            fetch('/bug/saveBug', {
+            fetch('/admin/saveBug', {
                 method: 'POST',
                 body: formData
             })
@@ -392,7 +470,7 @@
             let now = Math.floor(Date.now() / 1000);
             let timeLeft = sessionExpirationTime - now;
 
-            if (timeLeft <= 180) { // Show banner when 5 minutes or less remain
+            if (timeLeft <= 180) { // Show banner when 3 minutes or less remain
                 document.getElementById('session-expiration-banner').style.display = 'block';
             }
 
@@ -425,6 +503,49 @@
         // Refresh session on user interaction
         document.addEventListener('click', refreshSession);
         document.addEventListener('keypress', refreshSession);
+
+        let scrollTimeout;
+        window.addEventListener('scroll', function() {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(refreshSession, 0); // Debounce scroll events
+        });
+
+        // Add event listeners for user modal
+        document.addEventListener('DOMContentLoaded', function() {
+            var roleSelect = document.getElementById('roleId');
+            roleSelect.addEventListener('change', updateProjectSelect);
+
+            var userModal = document.getElementById('userModal');
+            userModal.addEventListener('show', updateProjectSelect);
+        });
+
+        // Add this new code for the bug form functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const assignedToSelect = document.getElementById('assignedToId');
+            const statusSelect = document.getElementById('statusId');
+
+            assignedToSelect.addEventListener('change', function() {
+                if (this.value) {
+                    // If a user is assigned, set status to "Assigned"
+                    statusSelect.value = "2";
+                } else {
+                    // If unassigned, set status to "Unassigned"
+                    statusSelect.value = "1";
+                }
+            });
+
+            statusSelect.addEventListener('change', function() {
+                if (this.value === "1") {
+                    // If status is set to "Unassigned", clear the assigned user
+                    assignedToSelect.value = "";
+                } else if (this.value === "2" && !assignedToSelect.value) {
+                    // If status is set to "Assigned" but no user is assigned, prompt to select a user
+                    alert("Please assign a user to this bug.");
+                    this.value = "1"; // Reset status to "Unassigned"
+                }
+                // Note: We don't change anything if status is set to "Closed" (3)
+            });
+        });
     </script>
 </body>
 </html>
