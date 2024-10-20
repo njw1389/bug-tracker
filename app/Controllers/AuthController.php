@@ -13,7 +13,7 @@ class AuthController
             $username = $_POST['username'] ?? '';
             $password = $_POST['password'] ?? '';
 
-            if (!$username || !$password) {
+            if (!$username || !$password || strlen($username) > 255 || strlen($password) > 255) {
                 $error = "Username and password are required";
                 require_once __DIR__ . '/../views/home.php';
                 return;

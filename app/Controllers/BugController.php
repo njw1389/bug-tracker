@@ -77,7 +77,7 @@ class BugController {
         $userId = SessionManager::get('user_id');
         $userRole = SessionManager::get('role');
 
-        if (!$projectId || !$summary || !$description || !$statusId || !$priorityId) {
+        if (!$projectId || !$summary || !$description || !$statusId || !$priorityId || strlen($summary) > 255 || strlen($description) > 1000) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields']);
             return;
         }

@@ -78,6 +78,10 @@ class User
                 $db->query($query, $params);
             } else {
                 // Insert new user
+                if (empty($this->Password)) {
+                    throw new \InvalidArgumentException("Password is required for new users");
+                }
+                
                 $query = "INSERT INTO user_details (username, roleId, projectId, password, name) VALUES (?, ?, ?, ?, ?)";
                 $params = [
                     $this->Username,

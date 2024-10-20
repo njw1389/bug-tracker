@@ -66,8 +66,8 @@ class AdminController {
         $password = $_POST['password'] ?? '';
         $name = htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8');
 
-        if (!$username || !$roleId || !$name) {
-            $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields']);
+        if (!$username || !$roleId || !$name || strlen($username) > 255 || strlen($name) > 255) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields OR Invalid input data']);
             return;
         }
 
@@ -246,8 +246,8 @@ class AdminController {
         $priorityId = filter_input(INPUT_POST, 'priorityId', FILTER_VALIDATE_INT);
         $targetDate = htmlspecialchars($_POST['targetDate'] ?? '', ENT_QUOTES, 'UTF-8');
 
-        if (!$projectId || !$summary || !$description || !$statusId || !$priorityId) {
-            $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields']);
+        if (!$projectId || !$summary || !$description || !$statusId || !$priorityId || strlen($summary) > 255 || strlen($description) > 1000) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields OR Invalid input data']);
             return;
         }
 

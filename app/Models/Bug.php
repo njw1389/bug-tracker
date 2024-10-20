@@ -97,8 +97,8 @@ class Bug
         $this->dateClosed = $this->validateDate($this->dateClosed);
 
         // Validate required fields
-        if (!$this->projectId || !$this->ownerId || !$this->statusId || !$this->priorityId || !$this->summary || !$this->description) {
-            throw new \InvalidArgumentException("Missing required fields");
+        if (!$this->projectId || !$this->ownerId || !$this->statusId || !$this->priorityId || !$this->summary || !$this->description || strlen($this->summary) > 255 || strlen($this->description) > 1000) {
+            throw new \InvalidArgumentException("Invalid input data");
         }
 
         try {
