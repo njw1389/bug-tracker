@@ -739,12 +739,10 @@
             var currentUserId = <?php echo json_encode(App\Core\SessionManager::get('user_id')); ?>;
             if (userId == currentUserId) {
                 if (confirm("Are you sure you want to delete your own account? This action will log you out and delete all your data. This cannot be undone.")) {
-                    // Send delete request to server
                     performDeleteUser(userId, true);
                 }
             } else {
                 if (confirm("Are you sure you want to delete this user?")) {
-                    // Send delete request to server
                     performDeleteUser(userId, false);
                 }
             }
@@ -768,7 +766,7 @@
                         location.reload();
                     }
                 } else {
-                    alert("Error deleting user: " + data.message);
+                    alert(data.message || "Error deleting user");
                 }
             })
             .catch((error) => {

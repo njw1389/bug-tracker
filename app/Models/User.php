@@ -50,6 +50,13 @@ class User
         return $user;
     }
 
+    public static function findByRole($roleId)
+    {
+        $db = Database::getInstance();
+        $users = $db->fetchAll("SELECT * FROM user_details WHERE roleId = ?", [$roleId], self::class);
+        return $users;
+    }
+
     public static function findByUsername($Username)
     {
         $cacheKey = "user_username_$Username";
@@ -137,5 +144,6 @@ class User
         Cache::delete("user_" . $this->Id);
         Cache::delete("user_username_" . $this->Username);
         Cache::delete("all_users");
+        Cache::delete("users_role_" . $this->RoleID);
     }
 }

@@ -100,6 +100,20 @@ class AdminController {
                 throw new \Exception('User not found');
             }
             
+            // Check if this is the last admin or manager
+            $admins = User::findByRole(1);
+            $managers = User::findByRole(2);
+            
+            if ($user->RoleID == 1 && count($admins) <= 1) {
+                $this->sendJsonResponse(['success' => false, 'message' => 'Cannot delete the last admin. Create a new admin before deleting this user.']);
+                return;
+            }
+            
+            if ($user->RoleID == 2 && count($managers) <= 1) {
+                $this->sendJsonResponse(['success' => false, 'message' => 'Cannot delete the last manager. Create a new manager before deleting this user.']);
+                return;
+            }
+            
             // Remove user from assigned bugs
             Bug::unassignUserFromBugs($userId);
             
