@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Core\Database;
-use App\Core\FileCache as Cache;
 
 class Bug
 {
@@ -22,73 +21,28 @@ class Bug
 
     public static function findById($id)
     {
-        $cacheKey = "bug_$id";
-        $cachedBug = Cache::get($cacheKey);
-        
-        if ($cachedBug !== false) {
-            return $cachedBug;
-        }
-
         $db = Database::getInstance();
         $bug = $db->fetch("SELECT * FROM bugs WHERE id = ?", [$id], self::class);
-        
-        if ($bug) {
-            Cache::set($cacheKey, $bug);
-        }
-
         return $bug;
     }
 
     public static function findByProject($projectId)
     {
-        $cacheKey = "project_bugs_$projectId";
-        $cachedBugs = Cache::get($cacheKey);
-        
-        if ($cachedBugs !== false) {
-            return $cachedBugs;
-        }
-
         $db = Database::getInstance();
         $bugs = $db->fetchAll("SELECT * FROM bugs WHERE projectId = ?", [$projectId], self::class);
-        
-        Cache::set($cacheKey, $bugs);
-
         return $bugs;
     }
 
     public static function findByAssignedUser($userId, $projectId)
     {
-        $cacheKey = "user_bugs_{$userId}_{$projectId}";
-        $cachedBugs = Cache::get($cacheKey);
-        
-        if ($cachedBugs !== false) {
-            return $cachedBugs;
-        }
-
         $db = Database::getInstance();
         $bugs = $db->fetchAll("SELECT * FROM bugs WHERE assignedToId = ? AND projectId = ?", [$userId, $projectId], self::class);
-        
-        Cache::set($cacheKey, $bugs);
-
         return $bugs;
     }
 
     public static function unassignUserFromBugs($userId) {
         $db = Database::getInstance();
         $db->query("UPDATE bugs SET assignedToId = NULL WHERE assignedToId = ?", [$userId]);
-
-        // Clear relevant caches
-        $allProjects = Project::findAll(); // Assuming you have a Project model with findAll method
-        foreach ($allProjects as $project) {
-            Cache::delete("user_bugs_{$userId}_{$project->Id}");
-        }
-        Cache::delete("all_bugs");
-
-        // Clear project-specific bug caches
-        $affectedBugs = $db->fetchAll("SELECT DISTINCT projectId FROM bugs WHERE assignedToId = ?", [$userId]);
-        foreach ($affectedBugs as $bug) {
-            Cache::delete("project_bugs_" . $bug['projectId']);
-        }
     }
 
     public function delete()
@@ -97,13 +51,6 @@ class Bug
 
         try {
             $db->query("DELETE FROM bugs WHERE id = ?", [$this->id]);
-
-            // Clear relevant caches
-            Cache::delete("bug_" . $this->id);
-            Cache::delete("project_bugs_" . $this->projectId);
-            Cache::delete("user_bugs_{$this->assignedToId}_{$this->projectId}");
-            Cache::delete("all_bugs");
-
             return true;
         } catch (\PDOException $e) {
             error_log("Database error: " . $e->getMessage());
@@ -117,17 +64,6 @@ class Bug
 
         try {
             $db->query("DELETE FROM bugs WHERE projectId = ?", [$projectId]);
-
-            // Clear relevant caches
-            Cache::delete("project_bugs_" . $projectId);
-            Cache::delete("all_bugs");
-
-            // Clear user-specific bug caches
-            $users = User::findAll();
-            foreach ($users as $user) {
-                Cache::delete("user_bugs_{$user->Id}_{$projectId}");
-            }
-
             return true;
         } catch (\PDOException $e) {
             error_log("Database error: " . $e->getMessage());
@@ -138,18 +74,8 @@ class Bug
 
     public static function findAll()
     {
-        $cacheKey = "all_bugs";
-        $cachedBugs = Cache::get($cacheKey);
-        
-        if ($cachedBugs !== false) {
-            return $cachedBugs;
-        }
-
         $db = Database::getInstance();
         $bugs = $db->fetchAll("SELECT * FROM bugs", [], self::class);
-        
-        Cache::set($cacheKey, $bugs);
-
         return $bugs;
     }
 
@@ -202,12 +128,6 @@ class Bug
                 $db->query($query, $params);
                 $this->id = $db->getConnection()->lastInsertId();
             }
-
-            // Clear relevant caches
-            Cache::delete("bug_" . $this->id);
-            Cache::delete("project_bugs_" . $this->projectId);
-            Cache::delete("user_bugs_{$this->assignedToId}_{$this->projectId}");
-            Cache::delete("all_bugs");
 
             return true;
         } catch (\PDOException $e) {

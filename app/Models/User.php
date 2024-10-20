@@ -16,37 +16,17 @@ class User
 
     public static function findAll()
     {
-        $cacheKey = "all_users";
-        $cachedUsers = Cache::get($cacheKey);
-        
-        if ($cachedUsers !== false) {
-            return $cachedUsers;
-        }
-
         $db = Database::getInstance();
         $users = $db->fetchAll("SELECT * FROM user_details", [], self::class);
-        
-        Cache::set($cacheKey, $users);
 
         return $users;
     }
 
     public static function findById($Id)
     {
-        $cacheKey = "user_$Id";
-        $cachedUser = Cache::get($cacheKey);
-        
-        if ($cachedUser !== false) {
-            return $cachedUser;
-        }
-
         $db = Database::getInstance();
         $user = $db->fetch("SELECT * FROM user_details WHERE Id = ?", [$Id], self::class);
         
-        if ($user) {
-            Cache::set($cacheKey, $user);
-        }
-
         return $user;
     }
 
@@ -59,20 +39,9 @@ class User
 
     public static function findByUsername($Username)
     {
-        $cacheKey = "user_username_$Username";
-        $cachedUser = Cache::get($cacheKey);
-        
-        if ($cachedUser !== false) {
-            return $cachedUser;
-        }
-
         $db = Database::getInstance();
         $user = $db->fetch("SELECT * FROM user_details WHERE Username = ?", [$Username], self::class);
         
-        if ($user) {
-            Cache::set($cacheKey, $user);
-        }
-
         return $user;
     }
 
@@ -122,11 +91,6 @@ class User
                 $this->Id = $db->getConnection()->lastInsertId();
             }
 
-            // Clear relevant caches
-            Cache::delete("user_" . $this->Id);
-            Cache::delete("user_username_" . $this->Username);
-            Cache::delete("all_users");
-
             return true;
         } catch (\PDOException $e) {
             // Log the error and throw a generic exception
@@ -139,11 +103,5 @@ class User
     {
         $db = Database::getInstance();
         $db->query("DELETE FROM user_details WHERE Id = ?", [$this->Id]);
-
-        // Clear relevant caches
-        Cache::delete("user_" . $this->Id);
-        Cache::delete("user_username_" . $this->Username);
-        Cache::delete("all_users");
-        Cache::delete("users_role_" . $this->RoleID);
     }
 }

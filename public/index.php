@@ -22,13 +22,6 @@ spl_autoload_register(function ($class) {
 });
 
 use App\Core\SessionManager;
-use App\Core\FileCache;
-
-// Initialize the cache
-FileCache::init(__DIR__ . '/../cache');
-
-// Set default cache TTL to 30 minutes
-FileCache::setDefaultTtl(604800);
 
 SessionManager::start();
 SessionManager::refreshSession();
