@@ -509,6 +509,7 @@
     </div>
 
     <!-- Modals -->
+    <!-- User Modal -->
     <div id="userModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -566,6 +567,7 @@
         </div>
     </div>
 
+    <!-- Project Modal -->
     <div id="projectModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -581,6 +583,7 @@
         </div>
     </div>
 
+    <!-- Bug Modal -->
     <div id="bugModal" class="modal">
         <div class="modal-content">
             <span class="close">&times;</span>
@@ -591,7 +594,7 @@
                 <label for="bugProjectId">Project:</label>
                 <select id="bugProjectId" name="bugProjectId" required>
                     <?php foreach ($projects as $project): ?>
-                        <option value="<?php echo $project->Id; ?>"><?php echo $project->Project; ?></option>
+                        <option value="<?php echo $project->Id; ?>"><?php echo htmlspecialchars($project->Project); ?></option>
                     <?php endforeach; ?>
                 </select>
                 
@@ -604,11 +607,6 @@
                 <label for="assignedToId">Assigned To:</label>
                 <select id="assignedToId" name="assignedToId">
                     <option value="">Unassigned</option>
-                    <?php foreach ($users as $user): ?>
-                        <?php if ($user->RoleID == 3): ?>
-                            <option value="<?php echo $user->Id; ?>"><?php echo $user->Name; ?></option>
-                        <?php endif; ?>
-                    <?php endforeach; ?>
                 </select>
                 
                 <label for="statusId">Status:</label>
@@ -799,6 +797,7 @@
             document.getElementById("bugModalTitle").innerText = "Add Bug";
             document.getElementById("bugForm").reset();
             document.getElementById("bugId").value = "";
+            updateAssignedToOptions();
             openModal("bugModal");
         }
 
@@ -809,10 +808,13 @@
             document.getElementById("bugProjectId").value = bug.projectId;
             document.getElementById("summary").value = bug.summary;
             document.getElementById("description").value = bug.description;
-            document.getElementById("assignedToId").value = bug.assignedToId || "";
             document.getElementById("statusId").value = bug.statusId;
             document.getElementById("priorityId").value = bug.priorityId;
             document.getElementById("targetDate").value = bug.targetDate;
+            
+            updateAssignedToOptions();
+            document.getElementById("assignedToId").value = bug.assignedToId || "";
+            
             openModal("bugModal");
         }
 
@@ -895,7 +897,7 @@
             let now = Math.floor(Date.now() / 1000);
             let timeLeft = sessionExpirationTime - now;
 
-            if (timeLeft <= 900) { // Show banner when 3 minutes or less remain
+            if (timeLeft <= 900) { // Show banner when 15 minutes or less remain
                 document.getElementById('session-expiration-banner').style.display = 'block';
             }
 
@@ -947,7 +949,7 @@
             }
         }
 
-        function deleteBug(bugId, bugSummary) {
+        function deleteBug(bugId) {
             if (confirm(`Are you sure you want to delete the bug (ID: ${bugId})? This action cannot be undone.`)) {
                 fetch('/admin/deleteBug', {
                     method: 'POST',
@@ -959,7 +961,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert(`Bug "${bugSummary}" (ID: ${bugId}) deleted successfully`);
+                        alert(`Bug (ID: ${bugId}) deleted successfully`);
                         location.reload();
                     } else {
                         alert("Error deleting bug: " + data.message);
@@ -994,10 +996,41 @@
             userModal.addEventListener('show', updateProjectSelect);
         });
 
-        // Add this new code for the bug form functionality
+        // Bug form functionality
         document.addEventListener('DOMContentLoaded', function() {
+            const bugProjectIdSelect = document.getElementById('bugProjectId');
             const assignedToSelect = document.getElementById('assignedToId');
             const statusSelect = document.getElementById('statusId');
+
+            // Create an object to store users by project
+            const usersByProject = <?php 
+                $usersByProject = [];
+                foreach ($users as $user) {
+                    if ($user->RoleID == 3 && $user->ProjectId) {
+                        $usersByProject[$user->ProjectId][] = [
+                            'id' => $user->Id,
+                            'name' => htmlspecialchars($user->Name)
+                        ];
+                    }
+                }
+                echo json_encode($usersByProject);
+            ?>;
+
+            function updateAssignedToOptions() {
+                const projectId = bugProjectIdSelect.value;
+                assignedToSelect.innerHTML = '<option value="">Unassigned</option>';
+
+                if (usersByProject[projectId]) {
+                    usersByProject[projectId].forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.name;
+                        assignedToSelect.appendChild(option);
+                    });
+                }
+            }
+
+            bugProjectIdSelect.addEventListener('change', updateAssignedToOptions);
 
             assignedToSelect.addEventListener('change', function() {
                 if (this.value) {
@@ -1020,6 +1053,32 @@
                 }
                 // Note: We don't change anything if status is set to "Closed" (3)
             });
+
+            // Call updateAssignedToOptions when opening the modal to ensure correct initial state
+            window.openAddBugModal = function() {
+                document.getElementById("bugModalTitle").innerText = "Add Bug";
+                document.getElementById("bugForm").reset();
+                document.getElementById("bugId").value = "";
+                updateAssignedToOptions();
+                openModal("bugModal");
+            };
+
+            window.openEditBugModal = function(bug) {
+                document.getElementById("bugModalTitle").innerText = "Edit Bug";
+                // Populate form fields with bug data
+                document.getElementById("bugId").value = bug.id;
+                document.getElementById("bugProjectId").value = bug.projectId;
+                document.getElementById("summary").value = bug.summary;
+                document.getElementById("description").value = bug.description;
+                document.getElementById("statusId").value = bug.statusId;
+                document.getElementById("priorityId").value = bug.priorityId;
+                document.getElementById("targetDate").value = bug.targetDate;
+                
+                updateAssignedToOptions();
+                document.getElementById("assignedToId").value = bug.assignedToId || "";
+                
+                openModal("bugModal");
+            };
         });
     </script>
 </body>
