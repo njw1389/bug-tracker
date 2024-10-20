@@ -17,7 +17,7 @@ class AdminController {
 
         $userRole = SessionManager::get('role');
 
-        $users = ($userRole == 1) ? User::findAll() : [];
+        $users = ($userRole == 1 || $userRole == 2) ? User::findAll() : [];
         $projects = Project::findAll();
         $bugs = Bug::findAll();
 
