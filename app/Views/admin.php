@@ -422,9 +422,9 @@
                                 <td><?php echo $bug->priorityId; ?></td>
                                 <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                                 <td>
-                                    <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                                        <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
-                                    <?php endif; ?>
+                                    <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
+                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
+
                                     <?php if ($userRole == 1): ?>
                                         <button onclick="deleteBug(<?php echo $bug->id; ?>)">Delete</button>
                                     <?php endif; ?>
@@ -464,9 +464,8 @@
                             <td><?php echo $bug->priorityId; ?></td>
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td>
-                                <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
-                                <?php endif; ?>
+                                <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
+                                <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -504,9 +503,8 @@
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td><?php echo $bug->targetDate; ?></td>
                             <td>
-                                <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
-                                <?php endif; ?>
+                                <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
+                                <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -543,6 +541,7 @@
                             <td><?php echo $bug->priorityId; ?></td>
                             <td><?php echo $bug->dateRaised; ?></td>
                             <td>
+                                <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
                                 <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                             </td>
                         </tr>
