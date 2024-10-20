@@ -18,6 +18,15 @@ class AdminController {
         $userRole = SessionManager::get('role');
 
         $users = ($userRole == 1 || $userRole == 2) ? User::findAll() : [];
+        
+        // Sort users by role
+        usort($users, function($a, $b) {
+            if ($a->RoleID == $b->RoleID) {
+                return strcmp($a->Username, $b->Username);
+            }
+            return $a->RoleID - $b->RoleID;
+        });
+
         $projects = Project::findAll();
         $bugs = Bug::findAll();
 

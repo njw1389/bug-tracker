@@ -279,12 +279,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($users as $user): ?>
+                        <?php 
+                        $currentRole = 0;
+                        foreach ($users as $user): 
+                            if ($user->RoleID != $currentRole) {
+                                $currentRole = $user->RoleID;
+                                $roleLabel = $currentRole == 1 ? 'Admins' : ($currentRole == 2 ? 'Managers' : 'Users');
+                                echo "<tr><td colspan='5'><h3>{$roleLabel}</h3></td></tr>";
+                            }
+                        ?>
                         <tr>
                             <td><?php echo $user->Id; ?></td>
-                            <td><?php echo $user->Username; ?></td>
+                            <td><?php echo htmlspecialchars($user->Username); ?></td>
                             <td><?php echo $user->RoleID; ?></td>
-                            <td><?php echo $user->ProjectId ? App\Models\Project::findById($user->ProjectId)->Project : 'N/A'; ?></td>
+                            <td><?php echo $user->ProjectId ? htmlspecialchars(App\Models\Project::findById($user->ProjectId)->Project) : 'N/A'; ?></td>
                             <td>
                                 <button onclick="openEditUserModal(<?php echo htmlspecialchars(json_encode($user)); ?>)">Edit</button>
                                 <button onclick="deleteUser(<?php echo $user->Id; ?>)">Delete</button>
