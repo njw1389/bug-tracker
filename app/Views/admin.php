@@ -688,6 +688,27 @@
         </div>
     </div>
 
+    <!-- Bug Details Modal -->
+    <div id="bugDetailsModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Bug Details</h2>
+            <div id="bugDetailsContent">
+                <p><strong>ID:</strong> <span id="bugDetailId"></span></p>
+                <p><strong>Project:</strong> <span id="bugDetailProject"></span></p>
+                <p><strong>Summary:</strong> <span id="bugDetailSummary"></span></p>
+                <p><strong>Description:</strong> <span id="bugDetailDescription"></span></p>
+                <p><strong>Status:</strong> <span id="bugDetailStatus"></span></p>
+                <p><strong>Priority:</strong> <span id="bugDetailPriority"></span></p>
+                <p><strong>Assigned To:</strong> <span id="bugDetailAssignedTo"></span></p>
+                <p><strong>Owner:</strong> <span id="bugDetailOwner"></span></p>
+                <p><strong>Date Raised:</strong> <span id="bugDetailDateRaised"></span></p>
+                <p><strong>Target Date:</strong> <span id="bugDetailTargetDate"></span></p>
+                <p><strong>Date Closed:</strong> <span id="bugDetailDateClosed"></span></p>
+            </div>
+        </div>
+    </div>
+
     <!-- Export Data Modal -->
     <div id="exportModal" class="modal">
         <div class="modal-content">
@@ -893,6 +914,81 @@
         }
 
         // Bug management
+        const projectNames = {};
+        const userNames = {};
+
+        // This function should be called when the page loads to populate the projectNames object
+        function initializeData() {
+            <?php foreach ($projects as $project): ?>
+            projectNames[<?php echo $project->Id; ?>] = "<?php echo htmlspecialchars($project->Project, ENT_QUOTES, 'UTF-8'); ?>";
+            <?php endforeach; ?>
+
+            <?php foreach ($users as $user): ?>
+            userNames[<?php echo $user->Id; ?>] = "<?php echo htmlspecialchars($user->Name, ENT_QUOTES, 'UTF-8'); ?>";
+            <?php endforeach; ?>
+        }
+
+        const currentUserId = <?php echo json_encode(App\Core\SessionManager::get('user_id')); ?>;
+
+        function getUserNameWithMeIndicator(userId) {
+            let name = getUserName(userId);
+            if (userId == currentUserId) {
+                name += ' (Me)';
+            }
+            return name;
+        }
+
+        function viewBugDetails(bug) {
+            // Populate the modal with bug details
+            document.getElementById('bugDetailId').textContent = bug.id;
+            document.getElementById('bugDetailProject').textContent = getProjectName(bug.projectId);
+            document.getElementById('bugDetailSummary').textContent = bug.summary;
+            document.getElementById('bugDetailDescription').textContent = bug.description;
+            document.getElementById('bugDetailStatus').textContent = getStatusText(bug.statusId);
+            document.getElementById('bugDetailPriority').textContent = getPriorityText(bug.priorityId);
+            document.getElementById('bugDetailAssignedTo').textContent = bug.assignedToId ? getUserNameWithMeIndicator(bug.assignedToId) : 'Unassigned';
+            document.getElementById('bugDetailOwner').textContent = getUserNameWithMeIndicator(bug.ownerId);
+            document.getElementById('bugDetailDateRaised').textContent = formatDate(bug.dateRaised);
+            document.getElementById('bugDetailTargetDate').textContent = formatDate(bug.targetDate);
+            document.getElementById('bugDetailDateClosed').textContent = formatDate(bug.dateClosed);
+
+            // Open the modal
+            openModal('bugDetailsModal');
+        }
+
+        function getProjectName(projectId) {
+            return projectNames[projectId] || `Unknown Project (ID: ${projectId})`;
+        }
+
+        function getStatusText(statusId) {
+            const statuses = {
+                1: 'Unassigned',
+                2: 'Assigned',
+                3: 'Closed'
+            };
+            return statuses[statusId] || 'Unknown';
+        }
+
+        function getPriorityText(priorityId) {
+            const priorities = {
+                1: 'Low',
+                2: 'Medium',
+                3: 'High',
+                4: 'Urgent'
+            };
+            return priorities[priorityId] || 'Unknown';
+        }
+
+        function getUserName(userId) {
+            return userNames[userId] || `Unknown User (ID: ${userId})`;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString();
+        }
+
         function openAddBugModal() {
             document.getElementById("bugModalTitle").innerText = "Add Bug";
             document.getElementById("bugForm").reset();
@@ -1134,6 +1230,8 @@
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(refreshSession, 0); // Debounce scroll events
         });
+
+        document.addEventListener('DOMContentLoaded', initializeData);
 
         // Add event listeners for user modal
         document.addEventListener('DOMContentLoaded', function() {

@@ -19,7 +19,8 @@ class BugController {
         $userRole = SessionManager::get('role');
         $user = User::findById($userId);
 
-        $projects = ($userRole <= 2) ? Project::findAll() : [Project::findById($user->ProjectId)];
+        $projects = Project::findAll();
+        $users = User::findAll();
         $bugs = $this->getBugsForUser($userId, $userRole, $user->ProjectId);
         $allBugs = $this->getAllBugs($user->ProjectId);
 
@@ -40,8 +41,6 @@ class BugController {
         foreach ($projects as $project) {
             $projectsById[$project->Id] = $project;
         }
-
-        $users = ($userRole <= 2) ? User::findAll() : [$user];
 
         require_once __DIR__ . '/../views/bug.php';
     }
