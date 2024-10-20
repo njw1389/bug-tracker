@@ -36,12 +36,11 @@ $router->addRoute('logout', 'AuthController', 'logout');
 $router->addRoute('admin/saveUser', 'AdminController', 'saveUser');
 $router->addRoute('admin/deleteUser', 'AdminController', 'deleteUser');
 $router->addRoute('admin/saveProject', 'AdminController', 'saveProject');
+$router->addRoute('admin/deleteProject', 'AdminController', 'deleteProject');
 $router->addRoute('admin/saveBug', 'AdminController', 'saveBug');
-$router->addRoute('bug', 'BugController', 'index');
+$router->addRoute('admin/deleteBug', 'AdminController', 'deleteBug');
 $router->addRoute('bug/saveBug', 'BugController', 'saveBug');
 $router->addRoute('refresh-session', 'AuthController', 'refreshSession');
-$router->addRoute('admin/deleteProject', 'AdminController', 'deleteProject');
-$router->addRoute('admin/deleteBug', 'AdminController', 'deleteBug');
 $router->addRoute('admin/exportData', 'AdminController', 'exportData');
 
 $url = $_SERVER['REQUEST_URI'];
