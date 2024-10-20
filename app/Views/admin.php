@@ -236,6 +236,17 @@
         .invalid {
             color: #e74c3c;
         }
+        #passwordFields {
+            display: none;
+        }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
 
         #exportModal .modal-content {
             max-width: 400px;
@@ -577,6 +588,11 @@
                     <?php endforeach; ?>
                 </select>
                 
+                <div class="checkbox-container">
+                    <input type="checkbox" id="updatePassword" name="updatePassword">
+                    <label for="updatePassword">Update Password</label>
+                </div>
+
                 <div id="passwordFields">
                     <label for="password">Password:</label>
                     <div class="password-container">
@@ -744,12 +760,13 @@
 
         // Password requirements check
         function checkPasswordRequirements() {
+            var updatePassword = document.getElementById('updatePassword').checked;
             var password = document.getElementById('password').value;
             var confirmPassword = document.getElementById('confirm-password').value;
             var isNewUser = document.getElementById('userId').value === "";
 
-            if (!isNewUser && password === "" && confirmPassword === "") {
-                // If editing user and password fields are empty, consider it valid
+            if (!isNewUser && !updatePassword) {
+                // If editing user and not updating password, consider it valid
                 return true;
             }
 
@@ -794,6 +811,8 @@
             document.getElementById("userModalTitle").innerText = "Add User";
             document.getElementById("userForm").reset();
             document.getElementById("userId").value = "";
+            document.getElementById("updatePassword").checked = true;
+            document.getElementById("updatePassword").disabled = true;
             document.getElementById("passwordFields").style.display = "block";
             document.getElementById("password").required = true;
             document.getElementById("confirm-password").required = true;
@@ -808,6 +827,8 @@
             document.getElementById("roleId").value = user.RoleID;
             document.getElementById("projectId").value = user.ProjectId || "";
             document.getElementById("name").value = user.Name;
+            document.getElementById("updatePassword").checked = false;
+            document.getElementById("updatePassword").disabled = false;
             document.getElementById("passwordFields").style.display = "none";
             document.getElementById("password").required = false;
             document.getElementById("confirm-password").required = false;
@@ -928,7 +949,7 @@
 
             closeModal("exportModal");
         };
-        
+
         document.getElementById("userForm").onsubmit = function(e) {
             e.preventDefault();
             if (checkPasswordRequirements()) {
@@ -998,6 +1019,24 @@
                 alert("An error occurred while saving the bug");
             });
         };
+
+        document.getElementById("updatePassword").addEventListener("change", function() {
+            var passwordFields = document.getElementById("passwordFields");
+            var passwordInput = document.getElementById("password");
+            var confirmPasswordInput = document.getElementById("confirm-password");
+            
+            if (this.checked) {
+                passwordFields.style.display = "block";
+                passwordInput.required = true;
+                confirmPasswordInput.required = true;
+            } else {
+                passwordFields.style.display = "none";
+                passwordInput.required = false;
+                confirmPasswordInput.required = false;
+                passwordInput.value = "";
+                confirmPasswordInput.value = "";
+            }
+        });
 
         // Session expiration countdown
         let sessionExpirationTime = <?php echo json_encode(App\Core\SessionManager::getSessionExpirationTime()); ?>;
