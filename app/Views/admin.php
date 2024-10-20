@@ -546,28 +546,30 @@
                     <?php endforeach; ?>
                 </select>
                 
-                <label for="password">Password:</label>
-                <div class="password-container">
-                    <input type="password" id="password" name="password">
-                    <button type="button" id="password-toggle" class="password-toggle">👓</button>
-                </div>
+                <div id="passwordFields">
+                    <label for="password">Password:</label>
+                    <div class="password-container">
+                        <input type="password" id="password" name="password">
+                        <button type="button" id="password-toggle" class="password-toggle">👓</button>
+                    </div>
 
-                <label for="confirm-password">Confirm Password:</label>
-                <div class="password-container">
-                    <input type="password" id="confirm-password" name="confirm-password">
-                    <button type="button" id="confirm-password-toggle" class="password-toggle">👓</button>
-                </div>
+                    <label for="confirm-password">Confirm Password:</label>
+                    <div class="password-container">
+                        <input type="password" id="confirm-password" name="confirm-password">
+                        <button type="button" id="confirm-password-toggle" class="password-toggle">👓</button>
+                    </div>
 
-                <div id="password-requirements" class="password-requirements">
-                    Password must contain:
-                    <ul>
-                        <li id="length">At least 8 characters</li>
-                        <li id="uppercase">At least one uppercase letter</li>
-                        <li id="lowercase">At least one lowercase letter</li>
-                        <li id="number">At least one number</li>
-                        <li id="special">At least one special character</li>
-                        <li id="match">Passwords must match</li>
-                    </ul>
+                    <div id="password-requirements" class="password-requirements">
+                        Password must contain:
+                        <ul>
+                            <li id="length">At least 8 characters</li>
+                            <li id="uppercase">At least one uppercase letter</li>
+                            <li id="lowercase">At least one lowercase letter</li>
+                            <li id="number">At least one number</li>
+                            <li id="special">At least one special character</li>
+                            <li id="match">Passwords must match</li>
+                        </ul>
+                    </div>
                 </div>
                 
                 <button type="submit">Save</button>
@@ -686,6 +688,13 @@
         function checkPasswordRequirements() {
             var password = document.getElementById('password').value;
             var confirmPassword = document.getElementById('confirm-password').value;
+            var isNewUser = document.getElementById('userId').value === "";
+
+            if (!isNewUser && password === "" && confirmPassword === "") {
+                // If editing user and password fields are empty, consider it valid
+                return true;
+            }
+
             var requirements = {
                 length: password.length >= 8,
                 uppercase: /[A-Z]/.test(password),
@@ -727,7 +736,10 @@
             document.getElementById("userModalTitle").innerText = "Add User";
             document.getElementById("userForm").reset();
             document.getElementById("userId").value = "";
-            updateProjectSelect(); // Ensure project select is properly set on open
+            document.getElementById("passwordFields").style.display = "block";
+            document.getElementById("password").required = true;
+            document.getElementById("confirm-password").required = true;
+            updateProjectSelect();
             openModal("userModal");
         }
 
@@ -738,8 +750,12 @@
             document.getElementById("roleId").value = user.RoleID;
             document.getElementById("projectId").value = user.ProjectId || "";
             document.getElementById("name").value = user.Name;
+            document.getElementById("passwordFields").style.display = "none";
+            document.getElementById("password").required = false;
+            document.getElementById("confirm-password").required = false;
             document.getElementById("password").value = "";
-            updateProjectSelect(); // Ensure project select is properly set on open
+            document.getElementById("confirm-password").value = "";
+            updateProjectSelect();
             openModal("userModal");
         }
 
