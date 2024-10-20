@@ -268,11 +268,14 @@
                         <tr>
                             <td><?php echo $bug->id; ?></td>
                             <td><?php echo htmlspecialchars($bug->summary); ?></td>
-                            <td><?php echo $bug->statusId; ?></td>
-                            <td><?php echo $bug->priorityId; ?></td>
+                            <td><span class="bug-status" data-status-id="<?php echo $bug->statusId; ?>"><?php echo $bug->statusId; ?></span></td>
+                            <td><span class="bug-priority" data-priority-id="<?php echo $bug->priorityId; ?>"><?php echo $bug->priorityId; ?></span></td>
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td>
                                 <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
+                                <?php if ($bug->ownerId === $user->Id): ?>
+                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
+                                <?php endif; ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -305,8 +308,8 @@
                             <td><?php echo $bug->id; ?></td>
                             <td><?php echo isset($projectsById[$bug->projectId]) ? htmlspecialchars($projectsById[$bug->projectId]->Project) : 'Unknown Project'; ?></td>
                             <td><?php echo htmlspecialchars($bug->summary); ?></td>
-                            <td><?php echo $bug->statusId; ?></td>
-                            <td><?php echo $bug->priorityId; ?></td>
+                            <td><span class="bug-status" data-status-id="<?php echo $bug->statusId; ?>"><?php echo $bug->statusId; ?></span></td>
+                            <td><span class="bug-priority" data-priority-id="<?php echo $bug->priorityId; ?>"><?php echo $bug->priorityId; ?></span></td>
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td>
                                 <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
@@ -342,8 +345,8 @@
                             <td><?php echo $bug->id; ?></td>
                             <td><?php echo isset($projectsById[$bug->projectId]) ? htmlspecialchars($projectsById[$bug->projectId]->Project) : 'Unknown Project'; ?></td>
                             <td><?php echo htmlspecialchars($bug->summary); ?></td>
-                            <td><?php echo $bug->statusId; ?></td>
-                            <td><?php echo $bug->priorityId; ?></td>
+                            <td><span class="bug-status" data-status-id="<?php echo $bug->statusId; ?>"><?php echo $bug->statusId; ?></span></td>
+                            <td><span class="bug-priority" data-priority-id="<?php echo $bug->priorityId; ?>"><?php echo $bug->priorityId; ?></span></td>
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td>
                                 <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
@@ -382,8 +385,8 @@
                             <td><?php echo $bug->id; ?></td>
                             <td><?php echo isset($projectsById[$bug->projectId]) ? htmlspecialchars($projectsById[$bug->projectId]->Project) : 'Unknown Project'; ?></td>
                             <td><?php echo htmlspecialchars($bug->summary); ?></td>
-                            <td><?php echo $bug->statusId; ?></td>
-                            <td><?php echo $bug->priorityId; ?></td>
+                            <td><span class="bug-status" data-status-id="<?php echo $bug->statusId; ?>"><?php echo $bug->statusId; ?></span></td>
+                            <td><span class="bug-priority" data-priority-id="<?php echo $bug->priorityId; ?>"><?php echo $bug->priorityId; ?></span></td>
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td><?php echo $bug->targetDate; ?></td>
                             <td>
@@ -518,6 +521,24 @@
             }
             return name;
         }
+
+        function updateStatusAndPriority() {
+            document.querySelectorAll('.bug-status').forEach(element => {
+                const statusId = element.getAttribute('data-status-id');
+                element.textContent = getStatusText(statusId);
+            });
+
+            document.querySelectorAll('.bug-priority').forEach(element => {
+                const priorityId = element.getAttribute('data-priority-id');
+                element.textContent = getPriorityText(priorityId);
+            });
+        }
+
+        // Call this function when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeData();
+            updateStatusAndPriority();
+        });
 
         function viewBugDetails(bug) {
             // Populate the modal with bug details
@@ -661,8 +682,6 @@
             clearTimeout(scrollTimeout);
             scrollTimeout = setTimeout(refreshSession, 0); // Debounce scroll events
         });
-
-        document.addEventListener('DOMContentLoaded', initializeData);
 
         // Add event listeners for user modal
         document.addEventListener('DOMContentLoaded', function() {
