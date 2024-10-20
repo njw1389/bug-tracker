@@ -237,6 +237,36 @@
             color: #e74c3c;
         }
 
+        #exportModal .modal-content {
+            max-width: 400px;
+        }
+
+        #exportModal .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        #exportModal .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #exportModal .checkbox-group input[type="checkbox"] {
+            margin: 0;
+        }
+
+        .export-button {
+            background-color: #f39c12;
+            margin-right: 10px;
+        }
+
+        .export-button:hover {
+            background-color: #e67e22;
+        }
+
         @media (max-width: 768px) {
             .container {
                 width: 100%;
@@ -513,6 +543,7 @@
             <button onclick="openAddBugModal()">Add New Bug</button>
         </section>
 
+        <button onclick="openExportModal()" class="button export-button">Export Data</button>
         <a href="/logout" class="button">Logout</a>
     </div>
 
@@ -638,6 +669,33 @@
                 <input type="date" id="targetDate" name="targetDate">
                 
                 <button type="submit">Save</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Export Data Modal -->
+    <div id="exportModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Export Data</h2>
+            <form id="exportForm">
+                <div class="checkbox-group">
+                    <?php if ($userRole == 1): ?>
+                        <label>
+                            <input type="checkbox" name="exportUsers" value="1">
+                            Users
+                        </label>
+                    <?php endif; ?>
+                    <label>
+                        <input type="checkbox" name="exportProjects" value="1">
+                        Projects
+                    </label>
+                    <label>
+                        <input type="checkbox" name="exportBugs" value="1">
+                        Bugs
+                    </label>
+                </div>
+                <button type="submit" class="button">Export Selected Data</button>
             </form>
         </div>
     </div>
@@ -840,7 +898,37 @@
             openModal("bugModal");
         }
 
+        function openExportModal() {
+            openModal("exportModal");
+        }
+
         // Form submissions
+        document.getElementById("exportForm").onsubmit = function(e) {
+            e.preventDefault();
+            var formData = new FormData(this);
+            
+            fetch('/admin/exportData', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.blob())
+            .then(blob => {
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'exported_data.zip';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while exporting the data");
+            });
+
+            closeModal("exportModal");
+        };
+        
         document.getElementById("userForm").onsubmit = function(e) {
             e.preventDefault();
             if (checkPasswordRequirements()) {

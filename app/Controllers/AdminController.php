@@ -6,6 +6,7 @@ use App\Core\SessionManager;
 use App\Models\Bug;
 use App\Models\Project;
 use App\Models\User;
+use ZipArchive;
 
 class AdminController {
     public function index() {
@@ -275,5 +276,114 @@ class AdminController {
     private function sendJsonResponse($data) {
         header('Content-Type: application/json');
         echo json_encode($data);
+    }
+
+    public function exportData() {
+        SessionManager::start();
+        if (!SessionManager::isLoggedIn() || SessionManager::get('role') > 2) {
+            header('HTTP/1.0 403 Forbidden');
+            echo "Unauthorized access";
+            return;
+        }
+
+        $userRole = SessionManager::get('role');
+
+        $exportUsers = isset($_POST['exportUsers']) && $userRole == 1;
+        $exportProjects = isset($_POST['exportProjects']);
+        $exportBugs = isset($_POST['exportBugs']);
+
+        $tempDir = sys_get_temp_dir() . '/export_' . time();
+        mkdir($tempDir);
+
+        if ($exportUsers) {
+            $this->exportUsers($tempDir);
+        }
+
+        if ($exportProjects) {
+            $this->exportProjects($tempDir);
+        }
+
+        if ($exportBugs) {
+            $this->exportBugs($tempDir);
+        }
+
+        $zipFile = $tempDir . '/exported_data.zip';
+        $this->createZipArchive($tempDir, $zipFile);
+
+        header('Content-Type: application/zip');
+        header('Content-Disposition: attachment; filename="exported_data.zip"');
+        header('Content-Length: ' . filesize($zipFile));
+        readfile($zipFile);
+
+        // Clean up
+        $this->removeDirectory($tempDir);
+    }
+
+    private function exportUsers($dir) {
+        $users = User::findAll();
+        $file = fopen($dir . '/users.csv', 'w');
+        fputcsv($file, ['ID', 'Username', 'Role', 'Project ID', 'Name']);
+        foreach ($users as $user) {
+            fputcsv($file, [$user->Id, $user->Username, $user->RoleID, $user->ProjectId, $user->Name]);
+        }
+        fclose($file);
+    }
+
+    private function exportProjects($dir) {
+        $projects = Project::findAll();
+        $file = fopen($dir . '/projects.csv', 'w');
+        fputcsv($file, ['ID', 'Project Name']);
+        foreach ($projects as $project) {
+            fputcsv($file, [$project->Id, $project->Project]);
+        }
+        fclose($file);
+    }
+
+    private function exportBugs($dir) {
+        $bugs = Bug::findAll();
+        $file = fopen($dir . '/bugs.csv', 'w');
+        fputcsv($file, ['ID', 'Project ID', 'Owner ID', 'Assigned To ID', 'Status ID', 'Priority ID', 'Summary', 'Description', 'Fix Description', 'Date Raised', 'Target Date', 'Date Closed']);
+        foreach ($bugs as $bug) {
+            fputcsv($file, [
+                $bug->id, $bug->projectId, $bug->ownerId, $bug->assignedToId,
+                $bug->statusId, $bug->priorityId, $bug->summary, $bug->description,
+                $bug->fixDescription, $bug->dateRaised, $bug->targetDate, $bug->dateClosed
+            ]);
+        }
+        fclose($file);
+    }
+
+    private function createZipArchive($sourceDir, $outZipPath) {
+        $zip = new ZipArchive();
+        if ($zip->open($outZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
+            $files = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($sourceDir),
+                \RecursiveIteratorIterator::LEAVES_ONLY
+            );
+
+            foreach ($files as $name => $file) {
+                if (!$file->isDir()) {
+                    $filePath = $file->getRealPath();
+                    $relativePath = substr($filePath, strlen($sourceDir) + 1);
+                    $zip->addFile($filePath, $relativePath);
+                }
+            }
+            $zip->close();
+        }
+    }
+
+    private function removeDirectory($dir) {
+        if (is_dir($dir)) {
+            $objects = scandir($dir);
+            foreach ($objects as $object) {
+                if ($object != "." && $object != "..") {
+                    if (is_dir($dir. DIRECTORY_SEPARATOR .$object) && !is_link($dir."/".$object))
+                        $this->removeDirectory($dir. DIRECTORY_SEPARATOR .$object);
+                    else
+                        unlink($dir. DIRECTORY_SEPARATOR .$object);
+                }
+            }
+            rmdir($dir);
+        }
     }
 }
