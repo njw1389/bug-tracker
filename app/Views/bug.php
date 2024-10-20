@@ -245,6 +245,41 @@
         <h1>Bug Management</h1>
 
         <section id="bug-management">
+        <h2>Bugs in My Project</h2>
+            <h3>All Bugs For <?php echo htmlspecialchars($projectsById[$user->ProjectId]->Project); ?></h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Summary</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Assigned To</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (empty($allBugs)): ?>
+                        <tr>
+                            <td colspan="6" style="text-align: center;">There are no bugs in this project at the moment.</td>
+                        </tr>
+                    <?php else: ?>
+                        <?php foreach ($allBugs as $bug): ?>
+                        <tr>
+                            <td><?php echo $bug->id; ?></td>
+                            <td><?php echo htmlspecialchars($bug->summary); ?></td>
+                            <td><?php echo $bug->statusId; ?></td>
+                            <td><?php echo $bug->priorityId; ?></td>
+                            <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
+                            <td>
+                                <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+            
             <h2>My Bugs</h2>
             <h3>All My Bugs For <?php echo htmlspecialchars($projectsById[$user->ProjectId]->Project); ?></h3>
             <table>
@@ -275,6 +310,7 @@
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td>
                                 <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
+                                <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -312,6 +348,7 @@
                             <td>
                                 <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
                                     <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
+                                    <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -352,6 +389,7 @@
                             <td>
                                 <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
                                     <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
+                                    <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
                                 <?php endif; ?>
                             </td>
                         </tr>

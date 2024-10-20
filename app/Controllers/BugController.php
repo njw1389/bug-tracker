@@ -21,6 +21,7 @@ class BugController {
 
         $projects = ($userRole <= 2) ? Project::findAll() : [Project::findById($user->ProjectId)];
         $bugs = $this->getBugsForUser($userId, $userRole, $user->ProjectId);
+        $allBugs = $this->getAllBugs($user->ProjectId);
 
         $openBugs = $this->filterBugs($bugs, function($bug) {
             return $bug->statusId != 3; // Assuming 3 is the 'Closed' status
@@ -51,6 +52,10 @@ class BugController {
         } else {
             return Bug::findByAssignedUser($userId, $userProjectId);
         }
+    }
+
+    private function getAllBugs($userProjectId) {
+        return Bug::findByProject($userProjectId);
     }
 
     private function filterBugs($bugs, $filterFunction) {
