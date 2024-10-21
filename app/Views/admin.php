@@ -314,6 +314,7 @@
                         <tr>
                             <th>ID</th>
                             <th>Username</th>
+                            <th>Name</th>
                             <th>Role</th>
                             <th>Project</th>
                             <th>Actions</th>
@@ -321,25 +322,83 @@
                     </thead>
                     <tbody>
                         <?php 
-                        $currentRole = 0;
-                        foreach ($users as $user): 
-                            if ($user->RoleID != $currentRole) {
-                                $currentRole = $user->RoleID;
-                                $roleLabel = $currentRole == 1 ? 'Admins' : ($currentRole == 2 ? 'Managers' : 'Users');
-                                echo "<tr><td colspan='5'><h3>{$roleLabel}</h3></td></tr>";
+                            // Separate users by role
+                            $admins = [];
+                            $managers = [];
+                            $regularUsers = [];
+
+                            foreach ($users as $user) {
+                                if ($user->RoleID == 1) {
+                                    $admins[] = $user;
+                                } elseif ($user->RoleID == 2) {
+                                    $managers[] = $user;
+                                } else {
+                                    $regularUsers[] = $user;
+                                }
+                            }
+
+                            // Sort admins and managers by username
+                            usort($admins, function($a, $b) { return strcasecmp($a->Username, $b->Username); });
+                            usort($managers, function($a, $b) { return strcasecmp($a->Username, $b->Username); });
+
+                            // Sort regular users by project and then by username
+                            usort($regularUsers, function($a, $b) {
+                                $projectCompare = strcasecmp(
+                                    $a->ProjectId ? App\Models\Project::findById($a->ProjectId)->Project : '',
+                                    $b->ProjectId ? App\Models\Project::findById($b->ProjectId)->Project : ''
+                                );
+                                return $projectCompare === 0 ? strcasecmp($a->Username, $b->Username) : $projectCompare;
+                            });
+
+                            // Function to display user row
+                            function displayUserRow($user) {
+                                $projectName = $user->ProjectId ? htmlspecialchars(App\Models\Project::findById($user->ProjectId)->Project) : 'N/A';
+                                $roleName = $user->RoleID == 1 ? 'Admin' : ($user->RoleID == 2 ? 'Manager' : 'User');
+                                ?>
+                                <tr>
+                                    <td><?php echo $user->Id; ?></td>
+                                    <td><?php echo htmlspecialchars($user->Username); ?></td>
+                                    <td><?php echo htmlspecialchars($user->Name);?></td>
+                                    <td><?php echo $roleName; ?></td>
+                                    <td><?php echo $projectName; ?></td>
+                                    <td>
+                                        <button onclick="openEditUserModal(<?php echo htmlspecialchars(json_encode($user)); ?>)">Edit</button>
+                                        <button onclick="deleteUser(<?php echo $user->Id; ?>)">Delete</button>
+                                    </td>
+                                </tr>
+                                <?php
+                            }
+
+                            // Display admins
+                            if (!empty($admins)) {
+                                echo "<tr><td colspan='7'><h3>Administrators</h3></td></tr>";
+                                foreach ($admins as $admin) {
+                                    displayUserRow($admin);
+                                }
+                            }
+
+                            // Display managers
+                            if (!empty($managers)) {
+                                echo "<tr><td colspan='7'><h3>Managers</h3></td></tr>";
+                                foreach ($managers as $manager) {
+                                    displayUserRow($manager);
+                                }
+                            }
+
+                            // Display regular users
+                            if (!empty($regularUsers)) {
+                                echo "<tr><td colspan='7'><h3>Users</h3></td></tr>";
+                                $currentProject = null;
+                                foreach ($regularUsers as $user) {
+                                    $userProject = $user->ProjectId ? App\Models\Project::findById($user->ProjectId)->Project : 'No Project';
+                                    if ($userProject !== $currentProject) {
+                                        echo "<tr><td colspan='7'><h4>" . htmlspecialchars($userProject) . "</h4></td></tr>";
+                                        $currentProject = $userProject;
+                                    }
+                                    displayUserRow($user);
+                                }
                             }
                         ?>
-                        <tr>
-                            <td><?php echo $user->Id; ?></td>
-                            <td><?php echo htmlspecialchars($user->Username); ?></td>
-                            <td><?php echo $user->RoleID; ?></td>
-                            <td><?php echo $user->ProjectId ? htmlspecialchars(App\Models\Project::findById($user->ProjectId)->Project) : 'N/A'; ?></td>
-                            <td>
-                                <button onclick="openEditUserModal(<?php echo htmlspecialchars(json_encode($user)); ?>)">Edit</button>
-                                <button onclick="deleteUser(<?php echo $user->Id; ?>)">Delete</button>
-                            </td>
-                        </tr>
-                        <?php endforeach; ?>
                     </tbody>
                 </table>
                 <button onclick="openAddUserModal()">Add New User</button>
