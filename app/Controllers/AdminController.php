@@ -185,6 +185,9 @@ class AdminController {
             
             // Remove user from assigned bugs
             Bug::unassignUserFromBugs($userId);
+
+            // Set bugs owned by this user to unassigned
+            Bug::reassignBugsToManager($userId);
             
             // Delete the user
             $user->delete();
@@ -278,8 +281,15 @@ class AdminController {
         }
 
         $bug = $bugId ? Bug::findById($bugId) : new Bug();
+        
+        // If it's a new bug, set the owner to the current user
+        if (!$bugId) {
+            $bug->ownerId = SessionManager::get('user_id');
+        }
+        // If it's an existing bug, keep the original owner
+        // The ownerId will remain unchanged if it's an existing bug
+
         $bug->projectId = $projectId;
-        $bug->ownerId = SessionManager::get('user_id');
         $bug->assignedToId = $assignedToId ?: null;
         $bug->statusId = $statusId;
         $bug->priorityId = $priorityId;

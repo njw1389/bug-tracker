@@ -63,6 +63,27 @@ class Bug
         );
     }
 
+    public static function reassignBugsToManager($userId)
+    {
+        $db = Database::getInstance();
+        
+        // First, find the manager with username 'manager'
+        $managerQuery = "SELECT Id FROM user_details WHERE Username = 'manager' AND RoleID = 2 LIMIT 1";
+        $manager = $db->fetch($managerQuery);
+        
+        if (!$manager) {
+            // If no manager found, log an error or throw an exception
+            error_log("No manager found with username 'manager'. Bugs will remain assigned to deleted user.");
+            return;
+        }
+        
+        $managerId = $manager['Id'];
+        
+        // Now update the bugs
+        $updateQuery = "UPDATE bugs SET ownerId = ? WHERE ownerId = ?";
+        $db->query($updateQuery, [$managerId, $userId]);
+    }
+
     public function delete()
     {
         $db = Database::getInstance();
