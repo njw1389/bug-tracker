@@ -405,6 +405,51 @@
             </section>
         <?php endif; ?>
 
+        <?php if ($userRole == 2): ?>
+            <section id="manager-user-assignment" class="manager-user-assignment">
+                <h2>User Project Assignment</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Name</th>
+                            <th>Current Project</th>
+                            <th>Assign to Project</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php
+                        $regularUsers = array_filter($users, function($user) {
+                            return $user->RoleID == 3;
+                        });
+                        usort($regularUsers, function($a, $b) {
+                            return strcmp($a->Username, $b->Username);
+                        });
+                        foreach ($regularUsers as $user):
+                        ?>
+                        <tr>
+                            <td><?php echo $user->Id; ?></td>
+                            <td><?php echo htmlspecialchars($user->Username); ?></td>
+                            <td><?php echo htmlspecialchars($user->Name); ?></td>
+                            <td><?php echo $user->ProjectId ? htmlspecialchars(App\Models\Project::findById($user->ProjectId)->Project) : 'None'; ?></td>
+                            <td>
+                                <select onchange="updateUserProject(<?php echo $user->Id; ?>, this.value)">
+                                    <option value="">None</option>
+                                    <?php foreach ($projects as $project): ?>
+                                        <option value="<?php echo $project->Id; ?>" <?php echo $user->ProjectId == $project->Id ? 'selected' : ''; ?>>
+                                            <?php echo htmlspecialchars($project->Project); ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </section>
+        <?php endif; ?>
+
         <section id="project-management">
             <h2>Project Management</h2>
             <table>
@@ -915,6 +960,28 @@
             document.getElementById("confirm-password").value = "";
             updateProjectSelect();
             openModal("userModal");
+        }
+
+        function updateUserProject(userId, projectId) {
+            fetch('/admin/updateUserProject', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ userId: userId, projectId: projectId }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("User project updated successfully");
+                } else {
+                    alert(data.message || "Error updating user project");
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while updating the user project");
+            });
         }
 
         function deleteUser(userId) {

@@ -52,6 +52,37 @@ class AdminController {
         require_once __DIR__ . '/../views/admin.php';
     }
 
+    public function updateUserProject() {
+        SessionManager::start();
+        if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 2) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
+            return;
+        }
+
+        $data = json_decode(file_get_contents('php://input'), true);
+        $userId = filter_var($data['userId'] ?? null, FILTER_VALIDATE_INT);
+        $projectId = filter_var($data['projectId'] ?? null, FILTER_VALIDATE_INT);
+
+        if (!$userId) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Invalid user ID']);
+            return;
+        }
+
+        try {
+            $user = User::findById($userId);
+            if (!$user || $user->RoleID != 3) {
+                throw new \Exception('Invalid user');
+            }
+            
+            $user->ProjectId = $projectId ?: null;
+            $user->save();
+            
+            $this->sendJsonResponse(['success' => true]);
+        } catch (\Exception $e) {
+            $this->sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+
     public function saveUser() {
         SessionManager::start();
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 1) {
