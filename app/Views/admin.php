@@ -1445,7 +1445,12 @@
                 }
             }
 
-            bugProjectIdSelect.addEventListener('change', updateAssignedToOptions);
+            bugProjectIdSelect.addEventListener('change', function() {
+                // Reset assigned user and status when project changes
+                assignedToSelect.value = "";
+                statusSelect.value = "1"; // Set to "Unassigned"
+                updateAssignedToOptions();
+            });
 
             assignedToSelect.addEventListener('change', function() {
                 if (this.value) {
