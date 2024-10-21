@@ -935,6 +935,8 @@
             document.getElementById("password").required = true;
             document.getElementById("confirm-password").required = true;
             updateProjectSelect();
+            // Set a flag to indicate this is a new user
+            document.getElementById("userForm").dataset.isNewUser = "true";
             openModal("userModal");
         }
 
@@ -954,6 +956,8 @@
             document.getElementById("password").value = "";
             document.getElementById("confirm-password").value = "";
             updateProjectSelect();
+            // Set a flag to indicate this is not a new user
+            document.getElementById("userForm").dataset.isNewUser = "false";
             openModal("userModal");
         }
 
@@ -997,8 +1001,9 @@
         function confirmProjectChange(selectElement) {
             const newProjectId = selectElement.value;
             const currentProjectId = selectElement.getAttribute('data-current-project');
+            const isNewUser = document.getElementById("userForm").dataset.isNewUser === "true";
             
-            if (newProjectId !== currentProjectId) {
+            if (!isNewUser && newProjectId !== currentProjectId) {
                 const confirmMessage = newProjectId
                     ? "Are you sure you want to change this user's project? They will be unassigned from all bugs in their current project before being assigned to the new project."
                     : "Are you sure you want to remove this user from their current project? They will be unassigned from all bugs in their current project.";
@@ -1406,6 +1411,11 @@
         document.addEventListener('DOMContentLoaded', function() {
             var roleSelect = document.getElementById('roleId');
             roleSelect.addEventListener('change', updateProjectSelect);
+
+            var projectSelect = document.getElementById('projectId');
+            projectSelect.addEventListener('change', function() {
+                confirmProjectChange(this);
+            });
 
             var userModal = document.getElementById('userModal');
             userModal.addEventListener('show', updateProjectSelect);
