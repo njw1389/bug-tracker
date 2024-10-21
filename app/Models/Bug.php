@@ -40,6 +40,16 @@ class Bug
         return $bugs;
     }
 
+    public static function findByProjectAndAssignedUser($projectId, $userId) {
+        $db = Database::getInstance();
+        $bugs = $db->fetchAll(
+            "SELECT * FROM bugs WHERE projectId = ? AND assignedToId = ?",
+            [$projectId, $userId],
+            self::class
+        );
+        return $bugs;
+    }
+
     public static function unassignUserFromBugs($userId) {
         $db = Database::getInstance();
 

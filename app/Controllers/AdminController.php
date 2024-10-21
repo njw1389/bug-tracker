@@ -98,33 +98,52 @@ class AdminController {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
             return;
         }
-
+    
         $userId = filter_input(INPUT_POST, 'userId', FILTER_VALIDATE_INT);
         $username = htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8');
         $roleId = filter_input(INPUT_POST, 'roleId', FILTER_VALIDATE_INT);
-        $projectId = filter_input(INPUT_POST, 'projectId', FILTER_VALIDATE_INT);
+        $newProjectId = filter_input(INPUT_POST, 'projectId', FILTER_VALIDATE_INT);
         $password = $_POST['password'] ?? '';
         $name = htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8');
-
+    
         if (!$username || !$roleId || !$name || strlen($username) > 255 || strlen($name) > 255) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields OR Invalid input data']);
             return;
         }
-
+    
         $user = $userId ? User::findById($userId) : new User();
+        $oldProjectId = $user->ProjectId;
+    
         $user->Username = $username;
         $user->RoleID = $roleId;
-        $user->ProjectId = $projectId ?: null;
+        $user->ProjectId = $newProjectId ?: null;
         if ($password) {
             $user->Password = $password;
         }
         $user->Name = $name;
-
+    
         try {
             $user->save();
+    
+            // If the project has changed, update the bugs
+            if ($oldProjectId !== $newProjectId) {
+                $this->updateBugsForUserProjectChange($userId, $oldProjectId);
+            }
+    
             $this->sendJsonResponse(['success' => true]);
         } catch (\Exception $e) {
             $this->sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
+    
+    private function updateBugsForUserProjectChange($userId, $oldProjectId) {
+        if ($oldProjectId) {
+            $bugs = Bug::findByProjectAndAssignedUser($oldProjectId, $userId);
+            foreach ($bugs as $bug) {
+                $bug->assignedToId = null;
+                $bug->statusId = 1; // Assuming 1 is the 'Unassigned' status
+                $bug->save();
+            }
         }
     }
 

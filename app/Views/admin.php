@@ -434,7 +434,7 @@
                             <td><?php echo htmlspecialchars($user->Name); ?></td>
                             <td><?php echo $user->ProjectId ? htmlspecialchars(App\Models\Project::findById($user->ProjectId)->Project) : 'None'; ?></td>
                             <td>
-                                <select onchange="updateUserProject(<?php echo $user->Id; ?>, this.value)">
+                                <select onchange="updateUserProject(<?php echo $user->Id; ?>, this.value, this)">
                                     <option value="">None</option>
                                     <?php foreach ($projects as $project): ?>
                                         <option value="<?php echo $project->Id; ?>" <?php echo $user->ProjectId == $project->Id ? 'selected' : ''; ?>>
@@ -684,10 +684,10 @@
                 </select>
                 
                 <label for="projectId">Project:</label>
-                <select id="projectId" name="projectId">
+                <select id="projectId" name="projectId" onchange="confirmProjectChange(this)">
                     <option value="">None</option>
                     <?php foreach ($projects as $project): ?>
-                        <option value="<?php echo $project->Id; ?>"><?php echo $project->Project; ?></option>
+                        <option value="<?php echo $project->Id; ?>"><?php echo htmlspecialchars($project->Project); ?></option>
                     <?php endforeach; ?>
                 </select>
                 
@@ -950,6 +950,7 @@
             document.getElementById("username").value = user.Username;
             document.getElementById("roleId").value = user.RoleID;
             document.getElementById("projectId").value = user.ProjectId || "";
+            document.getElementById("projectId").setAttribute('data-current-project', user.ProjectId || "");
             document.getElementById("name").value = user.Name;
             document.getElementById("updatePassword").checked = false;
             document.getElementById("updatePassword").disabled = false;
@@ -962,7 +963,8 @@
             openModal("userModal");
         }
 
-        function updateUserProject(userId, projectId) {
+        function updateUserProject(userId, projectId, selectElement) {
+            const originalValue = selectElement.value;
             const confirmMessage = projectId 
                 ? "Are you sure you want to change this user's project? They will be unassigned from all bugs in their current project before being assigned to the new project."
                 : "Are you sure you want to remove this user from their current project? They will be unassigned from all bugs in their current project.";
@@ -982,12 +984,36 @@
                         window.location.reload();
                     } else {
                         alert(data.message || "Error updating user project");
+                        selectElement.value = originalValue; // Reset to original value on error
+                        window.location.reload();
                     }
                 })
                 .catch((error) => {
                     console.error('Error:', error);
                     alert("An error occurred while updating the user project");
+                    selectElement.value = originalValue; // Reset to original value on error
+                    window.location.reload();
                 });
+            } else {
+                selectElement.value = originalValue; // Reset to original value when cancelled
+                window.location.reload();
+            }
+        }
+
+        function confirmProjectChange(selectElement) {
+            const newProjectId = selectElement.value;
+            const currentProjectId = selectElement.getAttribute('data-current-project');
+            
+            if (newProjectId !== currentProjectId) {
+                const confirmMessage = newProjectId
+                    ? "Are you sure you want to change this user's project? They will be unassigned from all bugs in their current project before being assigned to the new project."
+                    : "Are you sure you want to remove this user from their current project? They will be unassigned from all bugs in their current project.";
+
+                if (!confirm(confirmMessage)) {
+                    selectElement.value = currentProjectId;
+                } else {
+                    selectElement.setAttribute('data-current-project', newProjectId);
+                }
             }
         }
 
