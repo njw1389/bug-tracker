@@ -42,7 +42,15 @@ class Bug
 
     public static function unassignUserFromBugs($userId) {
         $db = Database::getInstance();
-        $db->query("UPDATE bugs SET assignedToId = NULL WHERE assignedToId = ?", [$userId]);
+
+        $unassignedStatusId = 1; 
+
+        $db->query(
+            "UPDATE bugs 
+            SET assignedToId = NULL, statusId = ? 
+            WHERE assignedToId = ?", 
+            [$unassignedStatusId, $userId]
+        );
     }
 
     public function delete()

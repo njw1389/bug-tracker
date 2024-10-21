@@ -54,7 +54,8 @@ class AdminController {
         require_once __DIR__ . '/../views/admin.php';
     }
 
-    public function updateUserProject() {
+    public function updateUserProject()
+    {
         SessionManager::start();
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 2) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
@@ -75,10 +76,16 @@ class AdminController {
             if (!$user || $user->RoleID != 3) {
                 throw new \Exception('Invalid user');
             }
-            
+
+            // Unassign user from all bugs in their current project
+            if ($user->ProjectId) {
+                Bug::unassignUserFromBugs($userId);
+            }
+
+            // Update user's project
             $user->ProjectId = $projectId ?: null;
             $user->save();
-            
+
             $this->sendJsonResponse(['success' => true]);
         } catch (\Exception $e) {
             $this->sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);

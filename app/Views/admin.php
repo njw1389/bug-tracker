@@ -963,25 +963,32 @@
         }
 
         function updateUserProject(userId, projectId) {
-            fetch('/admin/updateUserProject', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ userId: userId, projectId: projectId }),
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert("User project updated successfully");
-                } else {
-                    alert(data.message || "Error updating user project");
-                }
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-                alert("An error occurred while updating the user project");
-            });
+            const confirmMessage = projectId 
+                ? "Are you sure you want to change this user's project? They will be unassigned from all bugs in their current project before being assigned to the new project."
+                : "Are you sure you want to remove this user from their current project? They will be unassigned from all bugs in their current project.";
+
+            if (confirm(confirmMessage)) {
+                fetch('/admin/updateUserProject', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: userId, projectId: projectId }),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("User project updated successfully");
+                        window.location.reload();
+                    } else {
+                        alert(data.message || "Error updating user project");
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while updating the user project");
+                });
+            }
         }
 
         function deleteUser(userId) {
