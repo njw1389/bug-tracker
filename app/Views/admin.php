@@ -465,13 +465,7 @@
                     <tr>
                         <td><?php echo $project->Id; ?></td>
                         <td><?php echo $project->Project; ?></td>
-                        <td>
-                        <button onclick="openEditProjectModal(<?php echo htmlspecialchars(json_encode($project)); ?>)">Edit</button>
-                        <?php if ($userRole == 1): ?>
-                            <button onclick="deleteProject(<?php echo $project->Id; ?>, '<?php echo htmlspecialchars(addslashes($project->Project), ENT_QUOTES); ?>')">Delete</button>
-                        <?php endif; ?>
-                        
-                        </td>
+                        <td><button onclick="openEditProjectModal(<?php echo htmlspecialchars(json_encode($project)); ?>)">Edit</button></td>
                     </tr>
                     <?php endforeach; ?>
                 </tbody>

@@ -36,7 +36,6 @@ $router->addRoute('logout', 'AuthController', 'logout');
 $router->addRoute('admin/saveUser', 'AdminController', 'saveUser');
 $router->addRoute('admin/deleteUser', 'AdminController', 'deleteUser');
 $router->addRoute('admin/saveProject', 'AdminController', 'saveProject');
-$router->addRoute('admin/deleteProject', 'AdminController', 'deleteProject');
 $router->addRoute('admin/saveBug', 'AdminController', 'saveBug');
 $router->addRoute('admin/deleteBug', 'AdminController', 'deleteBug');
 $router->addRoute('bug/saveBug', 'BugController', 'saveBug');
