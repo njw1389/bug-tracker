@@ -104,7 +104,7 @@ class BugController {
         $bug = $bugId ? Bug::findById($bugId) : new Bug();
 
         // Check if the user has permission to edit this bug
-        if ($bugId && $userRole > 2 && $bug->assignedToId != $userId) {
+        if ($bugId && $userRole > 2 && $bug->assignedToId != $userId && $bug->ownerId != $userId) {
             $this->sendJsonResponse(['success' => false, 'message' => 'You do not have permission to edit this bug']);
             return;
         }
