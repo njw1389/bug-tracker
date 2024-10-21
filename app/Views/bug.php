@@ -273,7 +273,7 @@
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td>
                                 <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
-                                <?php if ($bug->ownerId === $user->Id): ?>
+                                <?php if ($bug->ownerId === $user->Id || $bug->assignedToId === $user->Id): ?>
                                     <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                                 <?php endif; ?>
                             </td>
@@ -312,8 +312,8 @@
                             <td><span class="bug-priority" data-priority-id="<?php echo $bug->priorityId; ?>"><?php echo $bug->priorityId; ?></span></td>
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td>
-                                <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                                 <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
+                                <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -350,8 +350,8 @@
                             <td><?php echo $bug->assignedToId ? htmlspecialchars(App\Models\User::findById($bug->assignedToId)->Name) : 'Unassigned'; ?></td>
                             <td>
                                 <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                                     <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
+                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -391,8 +391,8 @@
                             <td><?php echo $bug->targetDate; ?></td>
                             <td>
                                 <?php if ($userRole <= 2 || $bug->assignedToId == App\Core\SessionManager::get('user_id')): ?>
-                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                                     <button onclick="viewBugDetails(<?php echo htmlspecialchars(json_encode($bug)); ?>)">View</button>
+                                    <button onclick="openEditBugModal(<?php echo htmlspecialchars(json_encode($bug)); ?>)">Edit</button>
                                 <?php endif; ?>
                             </td>
                         </tr>
@@ -414,29 +414,31 @@
             <h2 id="bugModalTitle">Bug</h2>
             <form id="bugForm">
                 <input type="hidden" id="bugId" name="bugId">
+                
                 <label for="bugProjectId">Project:</label>
-                <select id="bugProjectId" name="bugProjectId" required>
-                    <?php foreach ($projects as $project): ?>
-                        <option value="<?php echo $project->Id; ?>"><?php echo $project->Project; ?></option>
-                    <?php endforeach; ?>
+                <select id="bugProjectId" name="bugProjectId" required disabled>
+                    <option value="<?php echo $user->ProjectId; ?>"><?php echo htmlspecialchars($projectsById[$user->ProjectId]->Project); ?></option>
                 </select>
+                
                 <label for="summary">Summary:</label>
                 <input type="text" id="summary" name="summary" required>
+                
                 <label for="description">Description:</label>
                 <textarea id="description" name="description" required></textarea>
+                
                 <label for="assignedToId">Assigned To:</label>
                 <select id="assignedToId" name="assignedToId">
                     <option value="">Unassigned</option>
-                    <?php foreach ($users as $user): ?>
-                        <option value="<?php echo $user->Id; ?>"><?php echo $user->Name; ?></option>
-                    <?php endforeach; ?>
+                    <option value="<?php echo $user->Id; ?>"><?php echo htmlspecialchars($user->Name); ?> (Me)</option>
                 </select>
+                
                 <label for="statusId">Status:</label>
                 <select id="statusId" name="statusId" required>
                     <option value="1">Unassigned</option>
                     <option value="2">Assigned</option>
                     <option value="3">Closed</option>
                 </select>
+                
                 <label for="priorityId">Priority:</label>
                 <select id="priorityId" name="priorityId" required>
                     <option value="1">Low</option>
@@ -444,8 +446,10 @@
                     <option value="3">High</option>
                     <option value="4">Urgent</option>
                 </select>
+                
                 <label for="targetDate">Target Date:</label>
                 <input type="date" id="targetDate" name="targetDate">
+                
                 <button type="submit">Save</button>
             </form>
         </div>
@@ -595,6 +599,10 @@
             document.getElementById("bugModalTitle").innerText = "Add Bug";
             document.getElementById("bugForm").reset();
             document.getElementById("bugId").value = "";
+            document.getElementById("bugProjectId").value = "<?php echo $user->ProjectId; ?>";
+            document.getElementById("assignedToId").value = "";
+            // Ensure the project dropdown shows the correct project name
+            document.getElementById("bugProjectId").selectedIndex = 0;
             openModal("bugModal");
         }
 
@@ -718,6 +726,50 @@
                 }
                 // Note: We don't change anything if status is set to "Closed" (3)
             });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const bugForm = document.getElementById('bugForm');
+            const projectIdSelect = document.getElementById('bugProjectId');
+            
+            // Create a hidden input to store the project ID
+            const hiddenProjectId = document.createElement('input');
+            hiddenProjectId.type = 'hidden';
+            hiddenProjectId.name = 'bugProjectId';
+            hiddenProjectId.value = projectIdSelect.value;
+            bugForm.appendChild(hiddenProjectId);
+            
+            // Update hidden input when the select changes (if it's ever re-enabled)
+            projectIdSelect.addEventListener('change', function() {
+                hiddenProjectId.value = this.value;
+            });
+            
+            // Modify the form submission to include the project ID
+            bugForm.onsubmit = function(e) {
+                e.preventDefault();
+                var formData = new FormData(this);
+                
+                // Ensure the project ID is included in the form data
+                formData.set('bugProjectId', hiddenProjectId.value);
+                
+                fetch('/bug/saveBug', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Bug saved successfully");
+                        location.reload();
+                    } else {
+                        alert("Error saving bug: " + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while saving the bug");
+                });
+            };
         });
     </script>
 </body>

@@ -77,13 +77,26 @@ class BugController {
         $priorityId = filter_input(INPUT_POST, 'priorityId', FILTER_VALIDATE_INT);
         $targetDate = htmlspecialchars($_POST['targetDate'] ?? '', ENT_QUOTES, 'UTF-8');
 
-
         $userId = SessionManager::get('user_id');
         $userRole = SessionManager::get('role');
+        $user = User::findById($userId);
 
         if (!$projectId || !$summary || !$description || !$statusId || !$priorityId || strlen($summary) > 255 || strlen($description) > 1000) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields']);
             return;
+        }
+
+        // Ensure the user can only assign to themselves or unassign
+        if ($userRole > 2) {
+            if ($assignedToId && $assignedToId != $userId) {
+                $this->sendJsonResponse(['success' => false, 'message' => 'You can only assign bugs to yourself']);
+                return;
+            }
+            // Ensure the user can only create/edit bugs for their own project
+            if ($projectId != $user->ProjectId) {
+                $this->sendJsonResponse(['success' => false, 'message' => 'You can only create/edit bugs for your own project']);
+                return;
+            }
         }
 
         $bug = $bugId ? Bug::findById($bugId) : new Bug();
