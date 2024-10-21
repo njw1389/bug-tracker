@@ -42,6 +42,8 @@ class BugController {
             $projectsById[$project->Id] = $project;
         }
 
+        $WelcomeUser = User::findById(SessionManager::get('user_id'));
+
         require_once __DIR__ . '/../views/bug.php';
     }
 

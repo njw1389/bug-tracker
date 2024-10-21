@@ -49,6 +49,8 @@ class AdminController {
             return $bug->assignedToId === null;
         });
 
+        $WelcomeUser = User::findById(SessionManager::get('user_id'));
+
         require_once __DIR__ . '/../views/admin.php';
     }
 

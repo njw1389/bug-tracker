@@ -304,7 +304,7 @@
         Your session will expire in <span id="session-countdown"></span>
     </div>
     <div class="container">
-        <h1>Admin Page</h1>
+        <h1>Admin Page - Welcome, <?php echo htmlspecialchars($WelcomeUser->Name); ?>!</h1>
 
         <?php if ($userRole == 1): ?>
             <section id="user-management">

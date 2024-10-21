@@ -242,7 +242,7 @@
         Your session will expire in <span id="session-countdown"></span>
     </div>
     <div class="container">
-        <h1>Bug Management</h1>
+        <h1>Bug Management - Welcome, <?php echo htmlspecialchars($WelcomeUser->Name); ?>!</h1>
 
         <section id="bug-management">
         <h2>Bugs in My Project</h2>
