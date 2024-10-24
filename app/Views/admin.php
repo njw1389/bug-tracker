@@ -182,6 +182,12 @@
             min-height: 100px;
         }
 
+        .disabled-field {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
         .modal button[type="submit"] {
             background-color: #3498db;
             color: white;
@@ -746,21 +752,33 @@
                 <input type="hidden" id="bugId" name="bugId">
                 
                 <label for="bugProjectId">Project:</label>
-                <select id="bugProjectId" name="bugProjectId" required>
+                <select id="bugProjectId" name="bugProjectId" required <?php echo ($userRole > 2) ? 'disabled' : ''; ?>>
                     <?php foreach ($projects as $project): ?>
                         <option value="<?php echo $project->Id; ?>"><?php echo htmlspecialchars($project->Project); ?></option>
                     <?php endforeach; ?>
                 </select>
                 
                 <label for="summary">Summary:</label>
-                <input type="text" id="summary" name="summary" required>
+                <input type="text" id="summary" name="summary" required maxlength="255">
                 
                 <label for="description">Description:</label>
-                <textarea id="description" name="description" required></textarea>
+                <textarea id="description" name="description" required maxlength="1000"></textarea>
                 
                 <label for="assignedToId">Assigned To:</label>
                 <select id="assignedToId" name="assignedToId">
                     <option value="">Unassigned</option>
+                    <?php if ($userRole <= 2): ?>
+                        <?php foreach ($users as $u): ?>
+                            <?php if ($u->RoleID == 3): ?>
+                                <option value="<?php echo $u->Id; ?>">
+                                    <?php echo htmlspecialchars($u->Name); ?>
+                                    <?php echo ($u->Id == $userId) ? ' (Me)' : ''; ?>
+                                </option>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <option value="<?php echo $userId; ?>"><?php echo htmlspecialchars($WelcomeUser->Name); ?> (Me)</option>
+                    <?php endif; ?>
                 </select>
                 
                 <label for="statusId">Status:</label>
@@ -781,6 +799,16 @@
                 <label for="targetDate">Target Date:</label>
                 <input type="date" id="targetDate" name="targetDate">
                 
+                <label for="fixDescription">Fix Description:</label>
+                <textarea 
+                    id="fixDescription" 
+                    name="fixDescription" 
+                    class="disabled-field"
+                    disabled
+                    placeholder="Only available when bug is closed"
+                    maxlength="1000"
+                ></textarea>
+                
                 <button type="submit">Save</button>
             </form>
         </div>
@@ -788,24 +816,25 @@
 
     <!-- Bug Details Modal -->
     <div id="bugDetailsModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <h2>Bug Details</h2>
-            <div id="bugDetailsContent">
-                <p><strong>ID:</strong> <span id="bugDetailId"></span></p>
-                <p><strong>Project:</strong> <span id="bugDetailProject"></span></p>
-                <p><strong>Summary:</strong> <span id="bugDetailSummary"></span></p>
-                <p><strong>Description:</strong> <span id="bugDetailDescription"></span></p>
-                <p><strong>Status:</strong> <span id="bugDetailStatus"></span></p>
-                <p><strong>Priority:</strong> <span id="bugDetailPriority"></span></p>
-                <p><strong>Assigned To:</strong> <span id="bugDetailAssignedTo"></span></p>
-                <p><strong>Owner:</strong> <span id="bugDetailOwner"></span></p>
-                <p><strong>Date Raised:</strong> <span id="bugDetailDateRaised"></span></p>
-                <p><strong>Target Date:</strong> <span id="bugDetailTargetDate"></span></p>
-                <p><strong>Date Closed:</strong> <span id="bugDetailDateClosed"></span></p>
-            </div>
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Bug Details</h2>
+        <div id="bugDetailsContent">
+            <p><strong>ID:</strong> <span id="bugDetailId"></span></p>
+            <p><strong>Project:</strong> <span id="bugDetailProject"></span></p>
+            <p><strong>Summary:</strong> <span id="bugDetailSummary"></span></p>
+            <p><strong>Description:</strong> <span id="bugDetailDescription"></span></p>
+            <p><strong>Status:</strong> <span id="bugDetailStatus"></span></p>
+            <p><strong>Priority:</strong> <span id="bugDetailPriority"></span></p>
+            <p><strong>Assigned To:</strong> <span id="bugDetailAssignedTo"></span></p>
+            <p><strong>Owner:</strong> <span id="bugDetailOwner"></span></p>
+            <p><strong>Date Raised:</strong> <span id="bugDetailDateRaised"></span></p>
+            <p><strong>Target Date:</strong> <span id="bugDetailTargetDate"></span></p>
+            <p><strong>Date Closed:</strong> <span id="bugDetailDateClosed"></span></p>
+            <p><strong>Fix Description:</strong> <span id="bugDetailFixDescription"></span></p>
         </div>
     </div>
+</div>
 
     <!-- Export Data Modal -->
     <div id="exportModal" class="modal">
@@ -911,6 +940,23 @@
 
         document.getElementById('password').addEventListener('input', checkPasswordRequirements);
         document.getElementById('confirm-password').addEventListener('input', checkPasswordRequirements);
+
+        // Fix Description handling functions
+        function handleFixDescriptionField(statusId) {
+            const fixDescriptionField = document.getElementById("fixDescription");
+            if (statusId === "3") { // If status is Closed
+                fixDescriptionField.disabled = false;
+                fixDescriptionField.required = true;
+                fixDescriptionField.classList.remove('disabled-field');
+                fixDescriptionField.placeholder = "Required when closing a bug";
+            } else {
+                fixDescriptionField.disabled = true;
+                fixDescriptionField.required = false;
+                fixDescriptionField.classList.add('disabled-field');
+                fixDescriptionField.placeholder = "Only available when bug is closed";
+                fixDescriptionField.value = ''; // Clear the value when disabled
+            }
+        }
 
         // User management
         function updateProjectSelect() {
@@ -1115,7 +1161,6 @@
         });
 
         function viewBugDetails(bug) {
-            // Populate the modal with bug details
             document.getElementById('bugDetailId').textContent = bug.id;
             document.getElementById('bugDetailProject').textContent = getProjectName(bug.projectId);
             document.getElementById('bugDetailSummary').textContent = bug.summary;
@@ -1127,8 +1172,8 @@
             document.getElementById('bugDetailDateRaised').textContent = formatDate(bug.dateRaised);
             document.getElementById('bugDetailTargetDate').textContent = formatDate(bug.targetDate);
             document.getElementById('bugDetailDateClosed').textContent = formatDate(bug.dateClosed);
+            document.getElementById('bugDetailFixDescription').textContent = bug.fixDescription || 'Not resolved yet';
 
-            // Open the modal
             openModal('bugDetailsModal');
         }
 
@@ -1169,23 +1214,26 @@
             document.getElementById("bugModalTitle").innerText = "Add Bug";
             document.getElementById("bugForm").reset();
             document.getElementById("bugId").value = "";
-            updateAssignedToOptions();
+            document.getElementById("assignedToId").value = "";
+            
+            handleFixDescriptionField("1"); // Default to Unassigned status
+            
             openModal("bugModal");
         }
 
         function openEditBugModal(bug) {
             document.getElementById("bugModalTitle").innerText = "Edit Bug";
-            // Populate form fields with bug data
             document.getElementById("bugId").value = bug.id;
             document.getElementById("bugProjectId").value = bug.projectId;
             document.getElementById("summary").value = bug.summary;
             document.getElementById("description").value = bug.description;
+            document.getElementById("assignedToId").value = bug.assignedToId || "";
             document.getElementById("statusId").value = bug.statusId;
             document.getElementById("priorityId").value = bug.priorityId;
-            document.getElementById("targetDate").value = bug.targetDate;
+            document.getElementById("targetDate").value = bug.targetDate || "";
+            document.getElementById("fixDescription").value = bug.fixDescription || "";
             
-            updateAssignedToOptions();
-            document.getElementById("assignedToId").value = bug.assignedToId || "";
+            handleFixDescriptionField(bug.statusId.toString());
             
             openModal("bugModal");
         }
@@ -1508,6 +1556,54 @@
                 document.getElementById("assignedToId").value = bug.assignedToId || "";
                 
                 openModal("bugModal");
+            };
+        });
+    
+        // Add event listeners when the document loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusSelect = document.getElementById('statusId');
+            const bugForm = document.getElementById('bugForm');
+
+            // Handle status changes
+            statusSelect.addEventListener('change', function() {
+                handleFixDescriptionField(this.value);
+            });
+
+            // Form submission handler
+            bugForm.onsubmit = function(e) {
+                e.preventDefault();
+                
+                // Validate fix description when status is Closed
+                const status = document.getElementById('statusId').value;
+                const fixDescription = document.getElementById('fixDescription').value;
+                
+                if (status === "3" && !fixDescription.trim()) {
+                    alert("Fix description is required when closing a bug");
+                    return;
+                }
+
+                var formData = new FormData(this);
+                
+                // Send to the appropriate endpoint based on the page
+                const endpoint = window.location.pathname.includes('admin') ? '/admin/saveBug' : '/bug/saveBug';
+                
+                fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Bug saved successfully");
+                        location.reload();
+                    } else {
+                        alert("Error saving bug: " + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while saving the bug");
+                });
             };
         });
     </script>

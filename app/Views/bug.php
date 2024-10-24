@@ -182,6 +182,22 @@
             min-height: 100px;
         }
 
+        .disabled-field {
+            background-color: #e9ecef;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        
+        .modal textarea {
+            resize: vertical;
+            min-height: 100px;
+            width: 97%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
         .modal button[type="submit"] {
             background-color: #3498db;
             color: white;
@@ -450,6 +466,16 @@
                 <label for="targetDate">Target Date:</label>
                 <input type="date" id="targetDate" name="targetDate">
                 
+                <label for="fixDescription">Fix Description:</label>
+                <textarea 
+                    id="fixDescription" 
+                    name="fixDescription" 
+                    class="disabled-field"
+                    disabled
+                    placeholder="Only available when bug is closed"
+                    maxlength="1000"
+                ></textarea>
+                
                 <button type="submit">Save</button>
             </form>
         </div>
@@ -472,6 +498,7 @@
                 <p><strong>Date Raised:</strong> <span id="bugDetailDateRaised"></span></p>
                 <p><strong>Target Date:</strong> <span id="bugDetailTargetDate"></span></p>
                 <p><strong>Date Closed:</strong> <span id="bugDetailDateClosed"></span></p>
+                <p><strong>Fix Description:</strong> <span id="bugDetailFixDescription"></span></p>
             </div>
         </div>
     </div>
@@ -559,6 +586,7 @@
             document.getElementById('bugDetailDateClosed').textContent = formatDate(bug.dateClosed);
 
             // Open the modal
+            document.getElementById('bugDetailFixDescription').textContent = bug.fixDescription || 'Not resolved yet';
             openModal('bugDetailsModal');
         }
 
@@ -601,6 +629,11 @@
             document.getElementById("bugId").value = "";
             document.getElementById("bugProjectId").value = "<?php echo $user->ProjectId; ?>";
             document.getElementById("assignedToId").value = "";
+            document.getElementById("fixDescription").value = "";
+            
+            // Initialize fix description field state
+            handleFixDescriptionField("1"); // Default to Unassigned status
+            
             // Ensure the project dropdown shows the correct project name
             document.getElementById("bugProjectId").selectedIndex = 0;
             openModal("bugModal");
@@ -608,7 +641,6 @@
 
         function openEditBugModal(bug) {
             document.getElementById("bugModalTitle").innerText = "Edit Bug";
-            // Populate form fields with bug data
             document.getElementById("bugId").value = bug.id;
             document.getElementById("bugProjectId").value = bug.projectId;
             document.getElementById("summary").value = bug.summary;
@@ -616,8 +648,29 @@
             document.getElementById("assignedToId").value = bug.assignedToId || "";
             document.getElementById("statusId").value = bug.statusId;
             document.getElementById("priorityId").value = bug.priorityId;
-            document.getElementById("targetDate").value = bug.targetDate;
+            document.getElementById("targetDate").value = bug.targetDate || "";
+            document.getElementById("fixDescription").value = bug.fixDescription || "";
+            
+            // Initialize fix description field state
+            handleFixDescriptionField(bug.statusId.toString());
+            
             openModal("bugModal");
+        }
+        
+        function handleFixDescriptionField(statusId) {
+            const fixDescriptionField = document.getElementById("fixDescription");
+            if (statusId === "3") { // If status is Closed
+                fixDescriptionField.disabled = false;
+                fixDescriptionField.required = true;
+                fixDescriptionField.classList.remove('disabled-field');
+                fixDescriptionField.placeholder = "Required when closing a bug";
+            } else {
+                fixDescriptionField.disabled = true;
+                fixDescriptionField.required = false;
+                fixDescriptionField.classList.add('disabled-field');
+                fixDescriptionField.placeholder = "Only available when bug is closed";
+                fixDescriptionField.value = ''; // Clear the value when disabled
+            }
         }
 
         // Form Submission
@@ -753,6 +806,54 @@
                 formData.set('bugProjectId', hiddenProjectId.value);
                 
                 fetch('/bug/saveBug', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Bug saved successfully");
+                        location.reload();
+                    } else {
+                        alert("Error saving bug: " + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while saving the bug");
+                });
+            };
+        });
+
+        // Add event listeners when the document loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusSelect = document.getElementById('statusId');
+            const bugForm = document.getElementById('bugForm');
+
+            // Handle status changes
+            statusSelect.addEventListener('change', function() {
+                handleFixDescriptionField(this.value);
+            });
+
+            // Form submission handler
+            bugForm.onsubmit = function(e) {
+                e.preventDefault();
+                
+                // Validate fix description when status is Closed
+                const status = document.getElementById('statusId').value;
+                const fixDescription = document.getElementById('fixDescription').value;
+                
+                if (status === "3" && !fixDescription.trim()) {
+                    alert("Fix description is required when closing a bug");
+                    return;
+                }
+
+                var formData = new FormData(this);
+                
+                // Send to the appropriate endpoint based on the page
+                const endpoint = window.location.pathname.includes('admin') ? '/admin/saveBug' : '/bug/saveBug';
+                
+                fetch(endpoint, {
                     method: 'POST',
                     body: formData
                 })
