@@ -530,7 +530,6 @@
 
         // Bug management
         const projectNames = {};
-        
         const userNames = {};
 
         // This function should be called when the page loads to populate the projectNames object
