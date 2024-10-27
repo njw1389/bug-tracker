@@ -4,87 +4,162 @@ namespace App\Models;
 
 use App\Core\Database;
 
+/**
+ * Bug Model represents and manages bug tracking entries in the system
+ * Handles CRUD operations and bug-related business logic
+ */
 class Bug
 {
+    /** @var int|null */
     public $id;
+    
+    /** @var int Project the bug belongs to */
     public $projectId;
+    
+    /** @var int User who created the bug */
     public $ownerId;
+    
+    /** @var int|null User assigned to fix the bug */
     public $assignedToId;
+    
+    /** @var int Current status (1=Unassigned, 2=Assigned, 3=Closed) */
     public $statusId;
+    
+    /** @var int Priority level (1=Low to 4=Urgent) */
     public $priorityId;
+    
+    /** @var string Brief description of the bug */
     public $summary;
+    
+    /** @var string Detailed description of the bug */
     public $description;
+    
+    /** @var string|null Description of how the bug was fixed */
     public $fixDescription;
+    
+    /** @var string Date the bug was reported */
     public $dateRaised;
+    
+    /** @var string|null Target date for resolution */
     public $targetDate;
+    
+    /** @var string|null Date the bug was closed */
     public $dateClosed;
 
-    public static function findById($id)
+    /**
+     * Finds a bug by its ID
+     * 
+     * @param int $id Bug ID to find
+     * @return Bug|null Bug object if found, null otherwise
+     */
+    public static function findById(int $id): ?Bug
     {
         $db = Database::getInstance();
-        $bug = $db->fetch("SELECT * FROM bugs WHERE id = ?", [$id], self::class);
-        return $bug;
+        return $db->fetch("SELECT * FROM bugs WHERE id = ?", [$id], self::class);
     }
 
-    public static function findByProject($projectId)
+    /**
+     * Finds all bugs for a specific project
+     * 
+     * @param int $projectId Project ID to find bugs for
+     * @return array Array of Bug objects
+     */
+    public static function findByProject(int $projectId): array
     {
         $db = Database::getInstance();
-        $bugs = $db->fetchAll("SELECT * FROM bugs WHERE projectId = ?", [$projectId], self::class);
-        return $bugs;
+        return $db->fetchAll(
+            "SELECT * FROM bugs WHERE projectId = ?", 
+            [$projectId], 
+            self::class
+        );
     }
 
-    public static function findByAssignedUser($userId, $projectId)
+    /**
+     * Finds bugs assigned to a specific user in a specific project
+     * 
+     * @param int $userId User ID of assignee
+     * @param int $projectId Project ID to filter by
+     * @return array Array of Bug objects
+     */
+    public static function findByAssignedUser(int $userId, int $projectId): array
     {
         $db = Database::getInstance();
-        $bugs = $db->fetchAll("SELECT * FROM bugs WHERE assignedToId = ? AND projectId = ?", [$userId, $projectId], self::class);
-        return $bugs;
+        return $db->fetchAll(
+            "SELECT * FROM bugs WHERE assignedToId = ? AND projectId = ?",
+            [$userId, $projectId],
+            self::class
+        );
     }
 
-    public static function findByProjectAndAssignedUser($projectId, $userId) {
+    /**
+     * Finds bugs by project and assigned user combination
+     * 
+     * @param int $projectId Project ID
+     * @param int $userId User ID
+     * @return array Array of Bug objects
+     */
+    public static function findByProjectAndAssignedUser(int $projectId, int $userId): array
+    {
         $db = Database::getInstance();
-        $bugs = $db->fetchAll(
+        return $db->fetchAll(
             "SELECT * FROM bugs WHERE projectId = ? AND assignedToId = ?",
             [$projectId, $userId],
             self::class
         );
-        return $bugs;
     }
 
-    public static function unassignUserFromBugs($userId) {
+    /**
+     * Unassigns all bugs from a specific user
+     * Sets status to unassigned for affected bugs
+     * 
+     * @param int $userId User ID to unassign bugs from
+     * @return void
+     */
+    public static function unassignUserFromBugs(int $userId): void
+    {
         $db = Database::getInstance();
-
-        $unassignedStatusId = 1; 
-
+        $unassignedStatusId = 1;
+        
         $db->query(
-            "UPDATE bugs 
-            SET assignedToId = NULL, statusId = ? 
-            WHERE assignedToId = ?", 
+            "UPDATE bugs SET assignedToId = NULL, statusId = ? WHERE assignedToId = ?",
             [$unassignedStatusId, $userId]
         );
     }
 
-    public static function reassignBugsToManager($userId)
+    /**
+     * Reassigns bugs from a deleted user to the default manager
+     * Used when deleting users to maintain bug ownership
+     * 
+     * @param int $userId ID of user being deleted
+     * @return void
+     */
+    public static function reassignBugsToManager(int $userId): void
     {
         $db = Database::getInstance();
         
-        // First, find the manager with username 'manager'
+        // Find default manager
         $managerQuery = "SELECT Id FROM user_details WHERE Username = 'manager' AND RoleID = 2 LIMIT 1";
         $manager = $db->fetch($managerQuery);
         
         if (!$manager) {
-            // If no manager found, log an error or throw an exception
             error_log("No manager found with username 'manager'. Bugs will remain assigned to deleted user.");
             return;
         }
         
-        $managerId = $manager['Id'];
-        
-        // Now update the bugs
-        $updateQuery = "UPDATE bugs SET ownerId = ? WHERE ownerId = ?";
-        $db->query($updateQuery, [$managerId, $userId]);
+        // Reassign bugs to manager
+        $db->query(
+            "UPDATE bugs SET ownerId = ? WHERE ownerId = ?",
+            [$manager['Id'], $userId]
+        );
     }
 
-    public function delete()
+    /**
+     * Deletes this bug from the database
+     * 
+     * @return bool True on success
+     * @throws \Exception If deletion fails
+     */
+    public function delete(): bool
     {
         $db = Database::getInstance();
 
@@ -97,32 +172,77 @@ class Bug
         }
     }
 
-    public static function deleteByProject($projectId)
+    /**
+     * Retrieves all bugs from the database
+     * 
+     * @return array Array of all Bug objects
+     */
+    public static function findAll(): array
+    {
+        $db = Database::getInstance();
+        return $db->fetchAll("SELECT * FROM bugs", [], self::class);
+    }
+
+    /**
+     * Saves or updates bug in the database
+     * Handles both new bug creation and existing bug updates
+     * 
+     * Validation:
+     * - Required fields presence
+     * - Field length limits
+     * - Data type validation
+     * - Date format validation
+     * 
+     * @return bool True on success
+     * @throws \InvalidArgumentException If validation fails
+     * @throws \Exception If save operation fails
+     */
+    public function save(): bool
     {
         $db = Database::getInstance();
 
+        // Validate and sanitize all inputs
+        $this->validateAndSanitizeFields();
+
         try {
-            $db->query("DELETE FROM bugs WHERE projectId = ?", [$projectId]);
+            if ($this->id) {
+                $this->updateExistingBug($db);
+            } else {
+                $this->insertNewBug($db);
+            }
             return true;
         } catch (\PDOException $e) {
             error_log("Database error: " . $e->getMessage());
-            throw new \Exception("An error occurred while deleting bugs for the project");
+            throw new \Exception("An error occurred while saving the bug");
         }
     }
 
-
-    public static function findAll()
+    /**
+     * Validates and formats a date string
+     * 
+     * @param string|null $date Date string to validate
+     * @return string|null Formatted date or null
+     * @throws \InvalidArgumentException If date format is invalid
+     */
+    private function validateDate(?string $date): ?string
     {
-        $db = Database::getInstance();
-        $bugs = $db->fetchAll("SELECT * FROM bugs", [], self::class);
-        return $bugs;
+        if (!$date) {
+            return null;
+        }
+        $timestamp = strtotime($date);
+        if ($timestamp === false) {
+            throw new \InvalidArgumentException("Invalid date format");
+        }
+        return date('Y-m-d H:i:s', $timestamp);
     }
 
-    public function save()
+    /**
+     * Validates and sanitizes all bug fields
+     * 
+     * @throws \InvalidArgumentException If validation fails
+     */
+    private function validateAndSanitizeFields(): void
     {
-        $db = Database::getInstance();
-
-        // Validate and sanitize inputs
         $this->projectId = filter_var($this->projectId, FILTER_VALIDATE_INT);
         $this->ownerId = filter_var($this->ownerId, FILTER_VALIDATE_INT);
         $this->assignedToId = $this->assignedToId ? filter_var($this->assignedToId, FILTER_VALIDATE_INT) : null;
@@ -135,56 +255,70 @@ class Bug
         $this->targetDate = !empty($this->targetDate) ? $this->validateDate($this->targetDate) : null;
         $this->dateClosed = $this->validateDate($this->dateClosed);
 
-        // Validate required fields
-        if (!$this->projectId || !$this->ownerId || !$this->statusId || !$this->priorityId || !$this->summary || !$this->description || strlen($this->summary) > 255 || strlen($this->description) > 1000) {
+        if (!$this->validateRequiredFields()) {
             throw new \InvalidArgumentException("Invalid input data");
-        }
-
-        try {
-            if ($this->id) {
-                // Update existing bug
-                $query = "UPDATE bugs SET 
-                    projectId = ?, ownerId = ?, assignedToId = ?, statusId = ?, priorityId = ?,
-                    summary = ?, description = ?, fixDescription = ?, dateRaised = ?, targetDate = ?, dateClosed = ?
-                    WHERE id = ?";
-                $params = [
-                    $this->projectId, $this->ownerId, $this->assignedToId, $this->statusId, $this->priorityId,
-                    $this->summary, $this->description, $this->fixDescription, $this->dateRaised, $this->targetDate,
-                    $this->dateClosed, $this->id
-                ];
-                $db->query($query, $params);
-            } else {
-                // Insert new bug
-                $query = "INSERT INTO bugs 
-                    (projectId, ownerId, assignedToId, statusId, priorityId, summary, description,
-                    fixDescription, dateRaised, targetDate, dateClosed)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                $params = [
-                    $this->projectId, $this->ownerId, $this->assignedToId, $this->statusId, $this->priorityId,
-                    $this->summary, $this->description, $this->fixDescription, $this->dateRaised, $this->targetDate,
-                    $this->dateClosed
-                ];
-                $db->query($query, $params);
-                $this->id = $db->getConnection()->lastInsertId();
-            }
-
-            return true;
-        } catch (\PDOException $e) {
-            // Log the error and throw a generic exception
-            error_log("Database error: " . $e->getMessage());
-            throw new \Exception("An error occurred while saving the bug");
         }
     }
 
-    private function validateDate($date)
+    /**
+     * Validates presence and format of required fields
+     * 
+     * @return bool True if all required fields are valid
+     */
+    private function validateRequiredFields(): bool
     {
-        if (!$date) {
-            return null;
-        }
-        $timestamp = strtotime($date);
-        if ($timestamp === false) {
-            throw new \InvalidArgumentException("Invalid date format");
-        }
-        return date('Y-m-d H:i:s', $timestamp);
+        return $this->projectId && 
+               $this->ownerId && 
+               $this->statusId && 
+               $this->priorityId && 
+               $this->summary && 
+               $this->description && 
+               strlen($this->summary) <= 255 && 
+               strlen($this->description) <= 1000;
+    }
+
+    /**
+     * Updates an existing bug in the database
+     * 
+     * @param Database $db Database instance
+     * @return void
+     */
+    private function updateExistingBug(Database $db): void
+    {
+        $query = "UPDATE bugs SET 
+            projectId = ?, ownerId = ?, assignedToId = ?, statusId = ?, priorityId = ?,
+            summary = ?, description = ?, fixDescription = ?, dateRaised = ?, targetDate = ?, 
+            dateClosed = ? WHERE id = ?";
+        
+        $params = [
+            $this->projectId, $this->ownerId, $this->assignedToId, $this->statusId,
+            $this->priorityId, $this->summary, $this->description, $this->fixDescription,
+            $this->dateRaised, $this->targetDate, $this->dateClosed, $this->id
+        ];
+        
+        $db->query($query, $params);
+    }
+
+    /**
+     * Inserts a new bug into the database
+     * 
+     * @param Database $db Database instance
+     * @return void
+     */
+    private function insertNewBug(Database $db): void
+    {
+        $query = "INSERT INTO bugs (
+            projectId, ownerId, assignedToId, statusId, priorityId, summary,
+            description, fixDescription, dateRaised, targetDate, dateClosed
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        
+        $params = [
+            $this->projectId, $this->ownerId, $this->assignedToId, $this->statusId,
+            $this->priorityId, $this->summary, $this->description, $this->fixDescription,
+            $this->dateRaised, $this->targetDate, $this->dateClosed
+        ];
+        
+        $db->query($query, $params);
+        $this->id = $db->getConnection()->lastInsertId();
     }
 }

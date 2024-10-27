@@ -8,9 +8,18 @@ use App\Models\Project;
 use App\Models\User;
 use ZipArchive;
 
+/**
+ * AdminController handles all administrative functions of the bug tracking system
+ * including user management, project management, and bug management for admin users.
+ */
 class AdminController {
+    /**
+     * Displays the admin dashboard with user, project, and bug management interfaces
+     * Only accessible by users with admin (role 1) or manager (role 2) privileges
+     */
     public function index() {
         SessionManager::start();
+        // Verify user is logged in and has appropriate role
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') > 2) {
             header('Location: /');
             exit;
@@ -18,9 +27,10 @@ class AdminController {
 
         $userRole = SessionManager::get('role');
 
+        // Only admins and managers can view user list
         $users = ($userRole == 1 || $userRole == 2) ? User::findAll() : [];
         
-        // Sort users by role
+        // Sort users first by role, then alphabetically by username within each role
         usort($users, function($a, $b) {
             if ($a->RoleID == $b->RoleID) {
                 return strcmp($a->Username, $b->Username);
@@ -31,14 +41,15 @@ class AdminController {
         $projects = Project::findAll();
         $bugs = Bug::findAll();
 
-        // Convert projects array to associative array with ID as key
+        // Create lookup array for quick project access
         $projectsById = [];
         foreach ($projects as $project) {
             $projectsById[$project->Id] = $project;
         }
 
+        // Filter bugs by different criteria
         $openBugs = array_filter($bugs, function($bug) {
-            return $bug->statusId != 3; // Assuming 3 is the 'Closed' status
+            return $bug->statusId != 3; // Status 3 = Closed
         });
 
         $overdueBugs = array_filter($bugs, function($bug) {
@@ -54,14 +65,21 @@ class AdminController {
         require_once __DIR__ . '/../views/admin.php';
     }
 
-    public function updateUserProject()
-    {
+    /**
+     * Updates a user's project assignment (Manager only function)
+     * When changing projects, unassigns user from all bugs in their current project
+     * 
+     * @return void JSON response indicating success/failure
+     */
+    public function updateUserProject() {
         SessionManager::start();
+        // Verify user is logged in and is a manager
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 2) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
             return;
         }
 
+        // Validate input data
         $data = json_decode(file_get_contents('php://input'), true);
         $userId = filter_var($data['userId'] ?? null, FILTER_VALIDATE_INT);
         $projectId = filter_var($data['projectId'] ?? null, FILTER_VALIDATE_INT);
@@ -72,17 +90,18 @@ class AdminController {
         }
 
         try {
+            // Verify user exists and is a regular user (role 3)
             $user = User::findById($userId);
             if (!$user || $user->RoleID != 3) {
                 throw new \Exception('Invalid user');
             }
 
-            // Unassign user from all bugs in their current project
+            // Unassign user from current project's bugs if they have one
             if ($user->ProjectId) {
                 Bug::unassignUserFromBugs($userId);
             }
 
-            // Update user's project
+            // Update user's project assignment
             $user->ProjectId = $projectId ?: null;
             $user->save();
 
@@ -92,13 +111,21 @@ class AdminController {
         }
     }
 
+    /**
+     * Saves or updates a user's information (Admin only function)
+     * Handles both new user creation and existing user updates
+     * 
+     * @return void JSON response indicating success/failure
+     */
     public function saveUser() {
         SessionManager::start();
+        // Verify user is logged in and is an admin
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 1) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
             return;
         }
     
+        // Validate and sanitize input data
         $userId = filter_input(INPUT_POST, 'userId', FILTER_VALIDATE_INT);
         $username = htmlspecialchars($_POST['username'] ?? '', ENT_QUOTES, 'UTF-8');
         $roleId = filter_input(INPUT_POST, 'roleId', FILTER_VALIDATE_INT);
@@ -106,14 +133,17 @@ class AdminController {
         $password = $_POST['password'] ?? '';
         $name = htmlspecialchars($_POST['name'] ?? '', ENT_QUOTES, 'UTF-8');
     
+        // Validate required fields and field lengths
         if (!$username || !$roleId || !$name || strlen($username) > 255 || strlen($name) > 255) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields OR Invalid input data']);
             return;
         }
     
+        // Get existing user or create new one
         $user = $userId ? User::findById($userId) : new User();
         $oldProjectId = $user->ProjectId;
     
+        // Update user properties
         $user->Username = $username;
         $user->RoleID = $roleId;
         $user->ProjectId = $newProjectId ?: null;
@@ -125,7 +155,7 @@ class AdminController {
         try {
             $user->save();
     
-            // If the project has changed, update the bugs
+            // Handle bug reassignment if user's project changed
             if ($oldProjectId !== $newProjectId) {
                 $this->updateBugsForUserProjectChange($userId, $oldProjectId);
             }
@@ -136,27 +166,44 @@ class AdminController {
         }
     }
     
+    /**
+     * Updates bug assignments when a user's project changes
+     * Unassigns the user from bugs in their old project and sets them to unassigned status
+     * 
+     * @param int $userId The ID of the user whose project is changing
+     * @param int $oldProjectId The ID of the user's previous project
+     * @return void
+     */
     private function updateBugsForUserProjectChange($userId, $oldProjectId) {
         if ($oldProjectId) {
             $bugs = Bug::findByProjectAndAssignedUser($oldProjectId, $userId);
             foreach ($bugs as $bug) {
                 $bug->assignedToId = null;
-                $bug->statusId = 1; // Assuming 1 is the 'Unassigned' status
+                $bug->statusId = 1; // Set to 'Unassigned' status
                 $bug->save();
             }
         }
     }
 
+    /**
+     * Deletes a user from the system (Admin only function)
+     * Handles reassignment of their bugs and project assignments
+     * Prevents deletion of last admin/manager to maintain system integrity
+     * 
+     * @return void JSON response indicating success/failure
+     */
     public function deleteUser() {
         SessionManager::start();
+        // Verify user is logged in and is an admin
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 1) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
             return;
         }
 
+        // Validate input data
         $data = json_decode(file_get_contents('php://input'), true);
         $userId = filter_var($data['userId'] ?? null, FILTER_VALIDATE_INT);
-        $isSelf = $data['isSelf'] ?? false;
+        $isSelf = $data['isSelf'] ?? false; // Flag indicating if user is deleting themselves
 
         if (!$userId) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Invalid user ID']);
@@ -169,31 +216,35 @@ class AdminController {
                 throw new \Exception('User not found');
             }
             
-            // Check if this is the last admin or manager
+            // Prevent deletion of last admin or manager
             $admins = User::findByRole(1);
             $managers = User::findByRole(2);
             
             if ($user->RoleID == 1 && count($admins) <= 1) {
-                $this->sendJsonResponse(['success' => false, 'message' => 'Cannot delete the last admin. Create a new admin before deleting this user.']);
+                $this->sendJsonResponse([
+                    'success' => false, 
+                    'message' => 'Cannot delete the last admin. Create a new admin before deleting this user.'
+                ]);
                 return;
             }
             
             if ($user->RoleID == 2 && count($managers) <= 1) {
-                $this->sendJsonResponse(['success' => false, 'message' => 'Cannot delete the last manager. Create a new manager before deleting this user.']);
+                $this->sendJsonResponse([
+                    'success' => false, 
+                    'message' => 'Cannot delete the last manager. Create a new manager before deleting this user.'
+                ]);
                 return;
             }
             
-            // Remove user from assigned bugs
+            // Clean up user's bug assignments
             Bug::unassignUserFromBugs($userId);
-
-            // Set bugs owned by this user to unassigned
             Bug::reassignBugsToManager($userId);
             
             // Delete the user
             $user->delete();
             
+            // Handle self-deletion
             if ($isSelf) {
-                // If the admin is deleting themselves, destroy the session
                 SessionManager::destroy();
             }
             
@@ -203,13 +254,20 @@ class AdminController {
         }
     }
 
+    /**
+     * Deletes a bug from the system (Admin only function)
+     * 
+     * @return void JSON response indicating success/failure
+     */
     public function deleteBug() {
         SessionManager::start();
+        // Verify user is logged in and is an admin
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') != 1) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
             return;
         }
 
+        // Validate input data
         $data = json_decode(file_get_contents('php://input'), true);
         $bugId = filter_var($data['bugId'] ?? null, FILTER_VALIDATE_INT);
 
@@ -224,7 +282,6 @@ class AdminController {
                 throw new \Exception('Bug not found');
             }
             
-            // Delete the bug
             $bug->delete();
             
             $this->sendJsonResponse(['success' => true]);
@@ -233,13 +290,21 @@ class AdminController {
         }
     }
 
+    /**
+     * Saves or updates a project (Admin/Manager function)
+     * Handles both new project creation and existing project updates
+     * 
+     * @return void JSON response indicating success/failure
+     */
     public function saveProject() {
         SessionManager::start();
+        // Verify user is logged in and has appropriate role
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') > 2) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
             return;
         }
 
+        // Validate and sanitize input data
         $projectId = filter_input(INPUT_POST, 'projectId', FILTER_VALIDATE_INT);
         $projectName = htmlspecialchars($_POST['projectName'] ?? '', ENT_QUOTES, 'UTF-8');
 
@@ -248,6 +313,7 @@ class AdminController {
             return;
         }
 
+        // Get existing project or create new one
         $project = $projectId ? Project::findById($projectId) : new Project();
         $project->Project = $projectName;
 
@@ -259,13 +325,22 @@ class AdminController {
         }
     }
 
+    /**
+     * Saves or updates a bug (Admin/Manager function)
+     * Handles both new bug creation and existing bug updates
+     * Maintains ownership history and handles status changes
+     * 
+     * @return void JSON response indicating success/failure
+     */
     public function saveBug() {
         SessionManager::start();
+        // Verify user is logged in and has appropriate role
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') > 2) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
             return;
         }
 
+        // Validate and sanitize input data
         $bugId = filter_input(INPUT_POST, 'bugId', FILTER_VALIDATE_INT);
         $projectId = filter_input(INPUT_POST, 'bugProjectId', FILTER_VALIDATE_INT);
         $summary = htmlspecialchars($_POST['summary'] ?? '', ENT_QUOTES, 'UTF-8');
@@ -275,20 +350,22 @@ class AdminController {
         $priorityId = filter_input(INPUT_POST, 'priorityId', FILTER_VALIDATE_INT);
         $targetDate = htmlspecialchars($_POST['targetDate'] ?? '', ENT_QUOTES, 'UTF-8');
 
+        // Validate required fields and field lengths
         if (!$projectId || !$summary || !$description || !$statusId || !$priorityId || strlen($summary) > 255 || strlen($description) > 1000) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields OR Invalid input data']);
             return;
         }
 
+        // Get existing bug or create new one
         $bug = $bugId ? Bug::findById($bugId) : new Bug();
         
-        // If it's a new bug, set the owner to the current user
+        // Set owner for new bugs only
         if (!$bugId) {
             $bug->ownerId = SessionManager::get('user_id');
+            $bug->dateRaised = date('Y-m-d H:i:s');
         }
-        // If it's an existing bug, keep the original owner
-        // The ownerId will remain unchanged if it's an existing bug
 
+        // Update bug properties
         $bug->projectId = $projectId;
         $bug->assignedToId = $assignedToId ?: null;
         $bug->statusId = $statusId;
@@ -296,10 +373,6 @@ class AdminController {
         $bug->summary = $summary;
         $bug->description = $description;
         $bug->targetDate = $targetDate ?: null;
-
-        if (!$bugId) {
-            $bug->dateRaised = date('Y-m-d H:i:s');
-        }
 
         try {
             $bug->save();
@@ -309,11 +382,24 @@ class AdminController {
         }
     }
 
+    /**
+     * Sends a JSON response to the client
+     * 
+     * @param array $data The data to be JSON encoded and sent
+     * @return void
+     */
     private function sendJsonResponse($data) {
         header('Content-Type: application/json');
         echo json_encode($data);
     }
 
+    /**
+     * Exports selected data types to CSV files and creates a ZIP archive
+     * Available for Admin and Manager roles
+     * Admins can export user data, both roles can export projects and bugs
+     * 
+     * @return void Outputs ZIP file for download
+     */
     public function exportData() {
         SessionManager::start();
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') > 2) {
@@ -324,25 +410,27 @@ class AdminController {
 
         $userRole = SessionManager::get('role');
 
+        // Determine what to export based on role and request
         $exportUsers = isset($_POST['exportUsers']) && $userRole == 1;
         $exportProjects = isset($_POST['exportProjects']);
         $exportBugs = isset($_POST['exportBugs']);
 
+        // Create temporary directory for export files
         $tempDir = sys_get_temp_dir() . '/export_' . time();
         mkdir($tempDir);
 
+        // Export selected data types
         if ($exportUsers) {
             $this->exportUsers($tempDir);
         }
-
         if ($exportProjects) {
             $this->exportProjects($tempDir);
         }
-
         if ($exportBugs) {
             $this->exportBugs($tempDir);
         }
 
+        // Create and send ZIP file
         $zipFile = $tempDir . '/exported_data.zip';
         $this->createZipArchive($tempDir, $zipFile);
 
@@ -351,20 +439,38 @@ class AdminController {
         header('Content-Length: ' . filesize($zipFile));
         readfile($zipFile);
 
-        // Clean up
+        // Clean up temporary files
         $this->removeDirectory($tempDir);
     }
 
+    /**
+     * Exports user data to CSV
+     * 
+     * @param string $dir Directory to save the CSV file
+     * @return void
+     */
     private function exportUsers($dir) {
         $users = User::findAll();
         $file = fopen($dir . '/users.csv', 'w');
         fputcsv($file, ['ID', 'Username', 'Role', 'Project ID', 'Name']);
         foreach ($users as $user) {
-            fputcsv($file, [$user->Id, $user->Username, $user->RoleID, $user->ProjectId, $user->Name]);
+            fputcsv($file, [
+                $user->Id, 
+                $user->Username, 
+                $user->RoleID, 
+                $user->ProjectId, 
+                $user->Name
+            ]);
         }
         fclose($file);
     }
 
+    /**
+     * Exports project data to CSV
+     * 
+     * @param string $dir Directory to save the CSV file
+     * @return void
+     */
     private function exportProjects($dir) {
         $projects = Project::findAll();
         $file = fopen($dir . '/projects.csv', 'w');
@@ -375,10 +481,20 @@ class AdminController {
         fclose($file);
     }
 
+    /**
+     * Exports bug data to CSV
+     * 
+     * @param string $dir Directory to save the CSV file
+     * @return void
+     */
     private function exportBugs($dir) {
         $bugs = Bug::findAll();
         $file = fopen($dir . '/bugs.csv', 'w');
-        fputcsv($file, ['ID', 'Project ID', 'Owner ID', 'Assigned To ID', 'Status ID', 'Priority ID', 'Summary', 'Description', 'Fix Description', 'Date Raised', 'Target Date', 'Date Closed']);
+        fputcsv($file, [
+            'ID', 'Project ID', 'Owner ID', 'Assigned To ID', 'Status ID', 
+            'Priority ID', 'Summary', 'Description', 'Fix Description', 
+            'Date Raised', 'Target Date', 'Date Closed'
+        ]);
         foreach ($bugs as $bug) {
             fputcsv($file, [
                 $bug->id, $bug->projectId, $bug->ownerId, $bug->assignedToId,
@@ -389,6 +505,13 @@ class AdminController {
         fclose($file);
     }
 
+    /**
+     * Creates a ZIP archive from a directory
+     * 
+     * @param string $sourceDir Source directory containing files to zip
+     * @param string $outZipPath Output path for the ZIP file
+     * @return void
+     */
     private function createZipArchive($sourceDir, $outZipPath) {
         $zip = new ZipArchive();
         if ($zip->open($outZipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) === TRUE) {
@@ -408,6 +531,12 @@ class AdminController {
         }
     }
 
+    /**
+     * Recursively removes a directory and its contents
+     * 
+     * @param string $dir Directory to remove
+     * @return void
+     */
     private function removeDirectory($dir) {
         if (is_dir($dir)) {
             $objects = scandir($dir);

@@ -5,107 +5,252 @@ namespace App\Models;
 use App\Core\Database;
 use App\Core\FileCache as Cache;
 
+/**
+* User Model represents and manages user accounts in the system
+* Handles user authentication, CRUD operations, and role management
+* 
+* Properties:
+* @property int|null $Id User's unique identifier
+* @property string $Username User's login name
+* @property int $RoleID User's role level (1=Admin, 2=Manager, 3=User)
+* @property int|null $ProjectId User's assigned project
+* @property string $Password User's hashed password
+* @property string $Name User's display name
+*/
 class User
 {
-    public $Id;
-    public $Username;
-    public $RoleID;
-    public $ProjectId;
-    public $Password;
-    public $Name;
+   /** @var int|null */
+   public $Id;
 
-    public static function findAll()
-    {
-        $db = Database::getInstance();
-        $users = $db->fetchAll("SELECT * FROM user_details", [], self::class);
+   /** @var string */
+   public $Username;
 
-        return $users;
-    }
+   /** @var int */
+   public $RoleID;
 
-    public static function findById($Id)
-    {
-        $db = Database::getInstance();
-        $user = $db->fetch("SELECT * FROM user_details WHERE Id = ?", [$Id], self::class);
-        
-        return $user;
-    }
+   /** @var int|null */
+   public $ProjectId;
 
-    public static function findByRole($roleId)
-    {
-        $db = Database::getInstance();
-        $users = $db->fetchAll("SELECT * FROM user_details WHERE roleId = ?", [$roleId], self::class);
-        return $users;
-    }
+   /** @var string */
+   public $Password;
 
-    public static function findByUsername($Username)
-    {
-        $db = Database::getInstance();
-        $user = $db->fetch("SELECT * FROM user_details WHERE Username = ?", [$Username], self::class);
-        
-        return $user;
-    }
+   /** @var string */
+   public $Name;
 
-    public function save()
-    {
-        $db = Database::getInstance();
+   /** @var array Valid role IDs and their names */
+   private const ROLES = [
+       1 => 'Admin',
+       2 => 'Manager',
+       3 => 'User'
+   ];
 
-        // Sanitize and validate inputs
-        $this->Username = htmlspecialchars($this->Username, ENT_QUOTES, 'UTF-8');
-        $this->RoleID = filter_var($this->RoleID, FILTER_VALIDATE_INT);
-        $this->ProjectId = $this->ProjectId ? filter_var($this->ProjectId, FILTER_VALIDATE_INT) : null;
-        $this->Name = htmlspecialchars($this->Name, ENT_QUOTES, 'UTF-8');
+   /**
+    * Retrieves all users from database
+    * 
+    * @return array Array of User objects
+    * @throws \PDOException If query fails
+    */
+   public static function findAll(): array
+   {
+       $db = Database::getInstance();
+       return $db->fetchAll("SELECT * FROM user_details", [], self::class);
+   }
 
-        try {
-            // Check for existing username
-            $existingUser = self::findByUsername($this->Username);
-            if ($existingUser && $existingUser->Id !== $this->Id) {
-                throw new \Exception("Username already exists");
-            }
+   /**
+    * Finds user by ID
+    * 
+    * @param int $Id User ID to find
+    * @return User|null User object if found, null otherwise
+    * @throws \PDOException If query fails
+    */
+   public static function findById(int $Id): ?User
+   {
+       $db = Database::getInstance();
+       return $db->fetch(
+           "SELECT * FROM user_details WHERE Id = ?",
+           [$Id],
+           self::class
+       );
+   }
 
-            if ($this->Id) {
-                // Update existing user
-                $query = "UPDATE user_details SET username = ?, roleId = ?, projectId = ?, name = ?";
-                $params = [$this->Username, $this->RoleID, $this->ProjectId, $this->Name];
+   /**
+    * Finds all users with specific role
+    * 
+    * @param int $roleId Role ID to search for
+    * @return array Array of User objects with specified role
+    * @throws \PDOException If query fails
+    */
+   public static function findByRole(int $roleId): array
+   {
+       $db = Database::getInstance();
+       return $db->fetchAll(
+           "SELECT * FROM user_details WHERE roleId = ?",
+           [$roleId],
+           self::class
+       );
+   }
 
-                if ($this->Password) {
-                    $query .= ", password = ?";
-                    $params[] = password_hash($this->Password, PASSWORD_DEFAULT);
-                }
+   /**
+    * Finds user by username
+    * 
+    * @param string $Username Username to search for
+    * @return User|null User object if found, null otherwise
+    * @throws \PDOException If query fails
+    */
+   public static function findByUsername(string $Username): ?User
+   {
+       $db = Database::getInstance();
+       return $db->fetch(
+           "SELECT * FROM user_details WHERE Username = ?",
+           [$Username],
+           self::class
+       );
+   }
 
-                $query .= " WHERE id = ?";
-                $params[] = $this->Id;
+   /**
+    * Saves or updates user in database
+    * Handles both new user creation and existing user updates
+    * 
+    * Validation:
+    * - Username uniqueness
+    * - Password requirements for new users
+    * - Role validation
+    * - Input sanitization
+    * 
+    * @return bool True on success
+    * @throws \InvalidArgumentException If validation fails
+    * @throws \Exception If user already exists or save fails
+    */
+   public function save(): bool
+   {
+       $db = Database::getInstance();
 
-                $db->query($query, $params);
-            } else {
-                // Insert new user
-                if (empty($this->Password)) {
-                    throw new \InvalidArgumentException("Password is required for new users");
-                }
-                
-                $query = "INSERT INTO user_details (username, roleId, projectId, password, name) VALUES (?, ?, ?, ?, ?)";
-                $params = [
-                    $this->Username,
-                    $this->RoleID,
-                    $this->ProjectId,
-                    password_hash($this->Password, PASSWORD_DEFAULT),
-                    $this->Name
-                ];
+       // Validate and sanitize all inputs
+       $this->validateAndSanitize();
 
-                $db->query($query, $params);
-                $this->Id = $db->getConnection()->lastInsertId();
-            }
+       try {
+           // Check username uniqueness
+           if ($this->usernameExists()) {
+               throw new \Exception("Username already exists");
+           }
 
-            return true;
-        } catch (\PDOException $e) {
-            // Log the error and throw a generic exception
-            error_log("Database error: " . $e->getMessage());
-            throw new \Exception("An error occurred while saving the user");
-        }
-    }
+           if ($this->Id) {
+               $this->updateExisting($db);
+           } else {
+               $this->validateNewUser();
+               $this->insertNew($db);
+           }
 
-    public function delete() 
-    {
-        $db = Database::getInstance();
-        $db->query("DELETE FROM user_details WHERE Id = ?", [$this->Id]);
-    }
+           return true;
+       } catch (\PDOException $e) {
+           error_log("Database error: " . $e->getMessage());
+           throw new \Exception("An error occurred while saving the user");
+       }
+   }
+
+   /**
+    * Deletes user from database
+    * 
+    * @throws \PDOException If deletion fails
+    */
+   public function delete(): void
+   {
+       $db = Database::getInstance();
+       $db->query("DELETE FROM user_details WHERE Id = ?", [$this->Id]);
+   }
+
+   /**
+    * Validates and sanitizes user properties
+    * 
+    * @throws \InvalidArgumentException If validation fails
+    */
+   private function validateAndSanitize(): void
+   {
+       // Sanitize string inputs
+       $this->Username = htmlspecialchars($this->Username, ENT_QUOTES, 'UTF-8');
+       $this->Name = htmlspecialchars($this->Name, ENT_QUOTES, 'UTF-8');
+
+       // Validate integers
+       $this->RoleID = filter_var($this->RoleID, FILTER_VALIDATE_INT);
+       $this->ProjectId = $this->ProjectId ? 
+           filter_var($this->ProjectId, FILTER_VALIDATE_INT) : null;
+
+       // Validate role
+       if (!array_key_exists($this->RoleID, self::ROLES)) {
+           throw new \InvalidArgumentException("Invalid role ID");
+       }
+
+       // Validate string lengths
+       if (strlen($this->Username) > 255 || strlen($this->Name) > 255) {
+           throw new \InvalidArgumentException("Username and Name must be less than 255 characters");
+       }
+   }
+
+   /**
+    * Checks if username already exists
+    * 
+    * @return bool True if username exists for different user
+    */
+   private function usernameExists(): bool
+   {
+       $existingUser = self::findByUsername($this->Username);
+       return $existingUser && $existingUser->Id !== $this->Id;
+   }
+
+   /**
+    * Validates requirements for new user
+    * 
+    * @throws \InvalidArgumentException If validation fails
+    */
+   private function validateNewUser(): void
+   {
+       if (empty($this->Password)) {
+           throw new \InvalidArgumentException("Password is required for new users");
+       }
+   }
+
+   /**
+    * Updates existing user in database
+    * 
+    * @param Database $db Database instance
+    * @throws \PDOException If update fails
+    */
+   private function updateExisting(Database $db): void
+   {
+       $query = "UPDATE user_details SET username = ?, roleId = ?, projectId = ?, name = ?";
+       $params = [$this->Username, $this->RoleID, $this->ProjectId, $this->Name];
+
+       if ($this->Password) {
+           $query .= ", password = ?";
+           $params[] = password_hash($this->Password, PASSWORD_DEFAULT);
+       }
+
+       $query .= " WHERE id = ?";
+       $params[] = $this->Id;
+
+       $db->query($query, $params);
+   }
+
+   /**
+    * Inserts new user into database
+    * 
+    * @param Database $db Database instance
+    * @throws \PDOException If insert fails
+    */
+   private function insertNew(Database $db): void
+   {
+       $query = "INSERT INTO user_details (username, roleId, projectId, password, name) 
+                VALUES (?, ?, ?, ?, ?)";
+       
+       $params = [
+           $this->Username,
+           $this->RoleID,
+           $this->ProjectId,
+           password_hash($this->Password, PASSWORD_DEFAULT),
+           $this->Name
+       ];
+
+       $db->query($query, $params);
+       $this->Id = $db->getConnection()->lastInsertId();
+   }
 }

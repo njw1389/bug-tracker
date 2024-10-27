@@ -3,47 +3,132 @@
 namespace App\Models;
 
 use App\Core\Database;
-use App\Core\FileCache as Cache;
 
+/**
+* Project Model represents and manages projects in the bug tracking system
+* Handles CRUD operations and validation for projects
+* 
+* Properties:
+* @property int|null $Id Project's unique identifier 
+* @property string $Project Project name
+*/
 class Project
 {
-    public $Id;
-    public $Project;
+   /** @var int|null Project's ID in database */
+   public $Id;
 
-    public static function findById($Id)
-    {
-        $db = Database::getInstance();
-        $project = $db->fetch("SELECT * FROM project WHERE Id = ?", [$Id], self::class);
-        
-        return $project;
-    }
+   /** @var string Project name/title */
+   public $Project;
 
-    public static function findAll()
-    {
-        $db = Database::getInstance();
-        $projects = $db->fetchAll("SELECT * FROM project", [], self::class);
+   /**
+    * Finds a project by its ID
+    * 
+    * @param int $Id Project ID to find
+    * @return Project|null Project object if found, null otherwise
+    * @throws \PDOException If database query fails
+    */
+   public static function findById(int $Id): ?Project
+   {
+       $db = Database::getInstance();
+       return $db->fetch(
+           "SELECT * FROM project WHERE Id = ?", 
+           [$Id], 
+           self::class
+       );
+   }
 
-        return $projects;
-    }
+   /**
+    * Retrieves all projects from database
+    * 
+    * @return array Array of Project objects
+    * @throws \PDOException If database query fails
+    */
+   public static function findAll(): array
+   {
+       $db = Database::getInstance();
+       return $db->fetchAll(
+           "SELECT * FROM project", 
+           [], 
+           self::class
+       );
+   }
 
-    public function save()
-    {
-        $db = Database::getInstance();
+   /**
+    * Saves or updates project in database
+    * Handles both new project creation and existing project updates
+    * 
+    * Validation:
+    * - Project name cannot be empty
+    * - Project name limited to 255 characters
+    * - Input sanitization for XSS prevention
+    * 
+    * @return void
+    * @throws \InvalidArgumentException If validation fails
+    * @throws \PDOException If database operation fails
+    */
+   public function save(): void
+   {
+       $db = Database::getInstance();
 
-        // Sanitize input
-        $this->Project = htmlspecialchars($this->Project, ENT_QUOTES, 'UTF-8');
+       // Validate and sanitize project name
+       $this->validateAndSanitize();
 
-        if (empty($this->Project) || strlen($this->Project) > 255) {
-            throw new \InvalidArgumentException("Invalid project name");
-        }
-        
-        if ($this->Id) {
-            // Update existing project
-            $db->query("UPDATE project SET Project = ? WHERE Id = ?", [$this->Project, $this->Id]);
-        } else {
-            // Insert new project
-            $db->query("INSERT INTO project (Project) VALUES (?)", [$this->Project]);
-            $this->Id = $db->getConnection()->lastInsertId();
-        }
-    }
+       try {
+           if ($this->Id) {
+               $this->updateExisting($db);
+           } else {
+               $this->insertNew($db);
+           }
+       } catch (\PDOException $e) {
+           error_log("Database error in Project save: " . $e->getMessage());
+           throw new \PDOException("Failed to save project: " . $e->getMessage());
+       }
+   }
+
+   /**
+    * Validates and sanitizes project properties
+    * 
+    * @throws \InvalidArgumentException If validation fails
+    */
+   private function validateAndSanitize(): void
+   {
+       // Sanitize project name
+       $this->Project = htmlspecialchars($this->Project, ENT_QUOTES, 'UTF-8');
+
+       // Validate project name
+       if (empty($this->Project) || strlen($this->Project) > 255) {
+           throw new \InvalidArgumentException("Project name must not be empty and must be less than 255 characters");
+       }
+   }
+
+   /**
+    * Updates an existing project
+    * 
+    * @param Database $db Database instance
+    * @return void
+    * @throws \PDOException If update fails
+    */
+   private function updateExisting(Database $db): void
+   {
+       $db->query(
+           "UPDATE project SET Project = ? WHERE Id = ?",
+           [$this->Project, $this->Id]
+       );
+   }
+
+   /**
+    * Inserts a new project
+    * 
+    * @param Database $db Database instance
+    * @return void
+    * @throws \PDOException If insert fails
+    */
+   private function insertNew(Database $db): void
+   {
+       $db->query(
+           "INSERT INTO project (Project) VALUES (?)",
+           [$this->Project]
+       );
+       $this->Id = $db->getConnection()->lastInsertId();
+   }
 }
