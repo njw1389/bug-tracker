@@ -21,7 +21,7 @@ class AdminController {
         SessionManager::start();
         // Verify user is logged in and has appropriate role
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') > 2) {
-            header('Location: /');
+            header('Location: ' . BASE_PATH . '/');
             exit;
         }
 
@@ -62,7 +62,7 @@ class AdminController {
 
         $WelcomeUser = User::findById(SessionManager::get('user_id'));
 
-        require_once __DIR__ . '/../views/admin.php';
+        require_once __DIR__ . '/../Views/admin.php';
     }
 
     /**

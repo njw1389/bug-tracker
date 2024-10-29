@@ -52,7 +52,7 @@ class Bug
      * @param int $id Bug ID to find
      * @return Bug|null Bug object if found, null otherwise
      */
-    public static function findById(int $id): ?Bug
+    public static function findById($id)
     {
         $db = Database::getInstance();
         return $db->fetch("SELECT * FROM bugs WHERE id = ?", [$id], self::class);
@@ -64,7 +64,7 @@ class Bug
      * @param int $projectId Project ID to find bugs for
      * @return array Array of Bug objects
      */
-    public static function findByProject(int $projectId): array
+    public static function findByProject($projectId)
     {
         $db = Database::getInstance();
         return $db->fetchAll(
@@ -81,7 +81,7 @@ class Bug
      * @param int $projectId Project ID to filter by
      * @return array Array of Bug objects
      */
-    public static function findByAssignedUser(int $userId, int $projectId): array
+    public static function findByAssignedUser($userId, $projectId)
     {
         $db = Database::getInstance();
         return $db->fetchAll(
@@ -98,7 +98,7 @@ class Bug
      * @param int $userId User ID
      * @return array Array of Bug objects
      */
-    public static function findByProjectAndAssignedUser(int $projectId, int $userId): array
+    public static function findByProjectAndAssignedUser($projectId, $userId)
     {
         $db = Database::getInstance();
         return $db->fetchAll(
@@ -115,7 +115,7 @@ class Bug
      * @param int $userId User ID to unassign bugs from
      * @return void
      */
-    public static function unassignUserFromBugs(int $userId): void
+    public static function unassignUserFromBugs($userId)
     {
         $db = Database::getInstance();
         $unassignedStatusId = 1;
@@ -133,7 +133,7 @@ class Bug
      * @param int $userId ID of user being deleted
      * @return void
      */
-    public static function reassignBugsToManager(int $userId): void
+    public static function reassignBugsToManager($userId)
     {
         $db = Database::getInstance();
         
@@ -159,7 +159,7 @@ class Bug
      * @return bool True on success
      * @throws \Exception If deletion fails
      */
-    public function delete(): bool
+    public function delete()
     {
         $db = Database::getInstance();
 
@@ -177,7 +177,7 @@ class Bug
      * 
      * @return array Array of all Bug objects
      */
-    public static function findAll(): array
+    public static function findAll()
     {
         $db = Database::getInstance();
         return $db->fetchAll("SELECT * FROM bugs", [], self::class);
@@ -197,7 +197,7 @@ class Bug
      * @throws \InvalidArgumentException If validation fails
      * @throws \Exception If save operation fails
      */
-    public function save(): bool
+    public function save()
     {
         $db = Database::getInstance();
 
@@ -224,7 +224,7 @@ class Bug
      * @return string|null Formatted date or null
      * @throws \InvalidArgumentException If date format is invalid
      */
-    private function validateDate(?string $date): ?string
+    private function validateDate($date)
     {
         if (!$date) {
             return null;
@@ -241,7 +241,7 @@ class Bug
      * 
      * @throws \InvalidArgumentException If validation fails
      */
-    private function validateAndSanitizeFields(): void
+    private function validateAndSanitizeFields()
     {
         $this->projectId = filter_var($this->projectId, FILTER_VALIDATE_INT);
         $this->ownerId = filter_var($this->ownerId, FILTER_VALIDATE_INT);
@@ -265,7 +265,7 @@ class Bug
      * 
      * @return bool True if all required fields are valid
      */
-    private function validateRequiredFields(): bool
+    private function validateRequiredFields()
     {
         return $this->projectId && 
                $this->ownerId && 
@@ -283,7 +283,7 @@ class Bug
      * @param Database $db Database instance
      * @return void
      */
-    private function updateExistingBug(Database $db): void
+    private function updateExistingBug($db)
     {
         $query = "UPDATE bugs SET 
             projectId = ?, ownerId = ?, assignedToId = ?, statusId = ?, priorityId = ?,
@@ -305,7 +305,7 @@ class Bug
      * @param Database $db Database instance
      * @return void
      */
-    private function insertNewBug(Database $db): void
+    private function insertNewBug($db)
     {
         $query = "INSERT INTO bugs (
             projectId, ownerId, assignedToId, statusId, priorityId, summary,

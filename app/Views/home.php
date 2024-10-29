@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bug Tracker - Home</title>
+    <?php require_once __DIR__ . '/../../config/config.php'; ?>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -89,7 +90,7 @@
 <body>
     <div class="container">
         <h1>Welcome to Bug Tracker</h1>
-        <form action="/login" method="post" class="login-form">
+        <form action="<?php echo url('login'); ?>" method="post" class="login-form">
             <div class="form-group">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>

@@ -658,7 +658,7 @@
         </section>
 
         <button onclick="openExportModal()" class="button export-button">Export Data</button>
-        <a href="/logout" class="button">Logout</a>
+        <a href="<?php echo url('logout'); ?>" class="button">Logout</a>
     </div>
 
     <!-- Modals -->
@@ -1076,7 +1076,7 @@
         }
 
         function performDeleteUser(userId, isSelf) {
-            fetch('/admin/deleteUser', {
+            fetch('<?php echo url('/admin/deleteUser'); ?>', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1088,7 +1088,7 @@
                 if (data.success) {
                     alert("User deleted successfully");
                     if (isSelf) {
-                        window.location.href = '/logout';
+                        window.location.href = '<?php echo url('logout'); ?>';
                     } else {
                         location.reload();
                     }
@@ -1382,7 +1382,7 @@
         }
 
         function refreshSession() {
-            fetch('/refresh-session', { method: 'POST' })
+            fetch('<?php echo url('refresh-session'); ?>', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {

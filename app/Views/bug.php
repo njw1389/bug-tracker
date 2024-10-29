@@ -420,7 +420,7 @@
             <button onclick="openAddBugModal()">Add New Bug</button>
         </section>
 
-        <a href="/logout" class="button">Logout</a>
+        <a href="<?php echo url('logout'); ?>" class="button">Logout</a>
     </div>
 
     <!-- Bug Modal -->
@@ -677,7 +677,7 @@
         document.getElementById("bugForm").onsubmit = function(e) {
             e.preventDefault();
             var formData = new FormData(this);
-            fetch('/bug/saveBug', {
+            fetch('<?php echo url('bug/saveBug'); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -721,7 +721,7 @@
         }
 
         function refreshSession() {
-            fetch('/refresh-session', { method: 'POST' })
+            fetch('<?php echo url('refresh-session'); ?>', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -753,7 +753,6 @@
             userModal.addEventListener('show', updateProjectSelect);
         });
 
-        // Add this new code for the bug form functionality
         document.addEventListener('DOMContentLoaded', function() {
             const assignedToSelect = document.getElementById('assignedToId');
             const statusSelect = document.getElementById('statusId');
@@ -805,7 +804,7 @@
                 // Ensure the project ID is included in the form data
                 formData.set('bugProjectId', hiddenProjectId.value);
                 
-                fetch('/bug/saveBug', {
+                fetch('<?php echo url('bug/saveBug'); ?>', {
                     method: 'POST',
                     body: formData
                 })
@@ -850,10 +849,7 @@
 
                 var formData = new FormData(this);
                 
-                // Send to the appropriate endpoint based on the page
-                const endpoint = window.location.pathname.includes('admin') ? '/admin/saveBug' : '/bug/saveBug';
-                
-                fetch(endpoint, {
+                fetch('<?php echo url('bug/saveBug'); ?>', {
                     method: 'POST',
                     body: formData
                 })

@@ -28,7 +28,7 @@ class BugController {
        SessionManager::start();
        // Verify authentication
        if (!SessionManager::isLoggedIn()) {
-           header('Location: /');
+           header('Location: ' . BASE_PATH . '/');
            exit;
        }
 
@@ -69,7 +69,7 @@ class BugController {
 
        $WelcomeUser = User::findById(SessionManager::get('user_id'));
 
-       require_once __DIR__ . '/../views/bug.php';
+       require_once __DIR__ . '/../Views/bug.php';
    }
 
    /**

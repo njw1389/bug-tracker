@@ -5,6 +5,8 @@ namespace App\Controllers;
 use App\Core\SessionManager;
 use App\Models\User;
 
+require_once __DIR__ . '/../../config/config.php';
+
 /**
 * AuthController handles all authentication-related functionality including
 * user login, logout, and session management.
@@ -28,7 +30,7 @@ class AuthController
            // Validate credential length and presence
            if (!$username || !$password || strlen($username) > 255 || strlen($password) > 255) {
                $error = "Username and password are required";
-               require_once __DIR__ . '/../views/home.php';
+               require_once __DIR__ . '/../Views/home.php';
                return;
            }
 
@@ -46,20 +48,20 @@ class AuthController
                
                // Route users based on role
                if ($user->RoleID == 1 || $user->RoleID == 2) { // Admin or Manager roles
-                   header('Location: /admin');
+                   header('Location: ' . BASE_PATH . 'admin');
                } else {
-                   header('Location: /bug');
+                   header('Location: ' . BASE_PATH . 'bug');
                }
                exit;
            } else {
                // Invalid credentials - show error but don't specify which field was wrong
                // (security best practice)
                $error = "Invalid username or password";
-               require_once __DIR__ . '/../views/home.php';
+               require_once __DIR__ . '/../Views/home.php';
            }
        } else {
            // Non-POST requests redirect to home page
-           header('Location: /');
+           header('Location: ' . BASE_PATH . '/');
        }
    }
 
@@ -75,7 +77,7 @@ class AuthController
        SessionManager::logout();
        
        // Redirect to home page
-       header('Location: /');
+       header('Location: ' . BASE_PATH . '/');
        exit;
    }
 

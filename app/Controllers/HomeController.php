@@ -33,6 +33,6 @@ class HomeController {
     */
    public function index() {
        // Load and display the home page view
-       require_once __DIR__ . '/../views/home.php';
+       require_once __DIR__ . '/../Views/home.php';
    }
 }

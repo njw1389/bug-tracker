@@ -27,7 +27,7 @@ class SessionManager
     * 
     * @return void
     */
-   public static function start(): void
+   public static function start()
    {
        if (session_status() == PHP_SESSION_NONE) {
            session_start();
@@ -41,7 +41,7 @@ class SessionManager
     * @param mixed $value Value to store
     * @return void
     */
-   public static function set(string $key, mixed $value): void
+   public static function set($key, $value)
    {
        $_SESSION[$key] = $value;
    }
@@ -53,7 +53,7 @@ class SessionManager
     * @param mixed $default Default value if key doesn't exist
     * @return mixed Session variable value or default
     */
-   public static function get(string $key, mixed $default = null): mixed
+   public static function get($key, $default = null)
    {
        return $_SESSION[$key] ?? $default;
    }
@@ -64,7 +64,7 @@ class SessionManager
     * @param string $key Session variable name
     * @return void
     */
-   public static function remove(string $key): void
+   public static function remove($key)
    {
        unset($_SESSION[$key]);
    }
@@ -75,7 +75,7 @@ class SessionManager
     * 
     * @return void
     */
-   public static function destroy(): void
+   public static function destroy()
    {
        session_destroy();
    }
@@ -86,7 +86,7 @@ class SessionManager
     * 
     * @return bool True if user is logged in and session is valid
     */
-   public static function isLoggedIn(): bool
+   public static function isLoggedIn()
    {
        return isset($_SESSION['user_id']) && self::checkSessionTimeout();
    }
@@ -102,7 +102,7 @@ class SessionManager
     * 
     * @return bool True if session is still valid
     */
-   public static function checkSessionTimeout(): bool
+   public static function checkSessionTimeout()
    {
        // Initialize last activity time if not set
        if (!isset($_SESSION['last_activity'])) {
@@ -127,7 +127,7 @@ class SessionManager
     * 
     * @return void
     */
-   public static function refreshSession(): void
+   public static function refreshSession()
    {
        if (self::isLoggedIn()) {
            self::set('last_activity', time());
@@ -142,7 +142,7 @@ class SessionManager
     * @param int $role User's role level
     * @return void
     */
-   public static function login(int $userId, int $role): void
+   public static function login($userId, $role)
    {
        self::set('user_id', $userId);
        self::set('role', $role);
@@ -155,7 +155,7 @@ class SessionManager
     * 
     * @return void
     */
-   public static function logout(): void
+   public static function logout()
    {
        self::destroy();
    }
@@ -167,7 +167,7 @@ class SessionManager
     * @return int Unix timestamp of session expiration
     * @throws \RuntimeException If session is not started
     */
-   public static function getSessionExpirationTime(): int
+   public static function getSessionExpirationTime()
    {
        if (!isset($_SESSION['last_activity'])) {
            throw new \RuntimeException('Session not initialized');

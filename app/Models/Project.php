@@ -27,7 +27,7 @@ class Project
     * @return Project|null Project object if found, null otherwise
     * @throws \PDOException If database query fails
     */
-   public static function findById(int $Id): ?Project
+   public static function findById($Id)
    {
        $db = Database::getInstance();
        return $db->fetch(
@@ -43,7 +43,7 @@ class Project
     * @return array Array of Project objects
     * @throws \PDOException If database query fails
     */
-   public static function findAll(): array
+   public static function findAll()
    {
        $db = Database::getInstance();
        return $db->fetchAll(
@@ -66,7 +66,7 @@ class Project
     * @throws \InvalidArgumentException If validation fails
     * @throws \PDOException If database operation fails
     */
-   public function save(): void
+   public function save()
    {
        $db = Database::getInstance();
 
@@ -90,7 +90,7 @@ class Project
     * 
     * @throws \InvalidArgumentException If validation fails
     */
-   private function validateAndSanitize(): void
+   private function validateAndSanitize()
    {
        // Sanitize project name
        $this->Project = htmlspecialchars($this->Project, ENT_QUOTES, 'UTF-8');
@@ -108,7 +108,7 @@ class Project
     * @return void
     * @throws \PDOException If update fails
     */
-   private function updateExisting(Database $db): void
+   private function updateExisting($db)
    {
        $db->query(
            "UPDATE project SET Project = ? WHERE Id = ?",
@@ -123,7 +123,7 @@ class Project
     * @return void
     * @throws \PDOException If insert fails
     */
-   private function insertNew(Database $db): void
+   private function insertNew($db)
    {
        $db->query(
            "INSERT INTO project (Project) VALUES (?)",

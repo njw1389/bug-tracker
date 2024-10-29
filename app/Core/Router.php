@@ -28,7 +28,7 @@ class Router {
     * $router->addRoute('/', 'HomeController', 'index');
     * $router->addRoute('admin', 'AdminController', 'dashboard');
     */
-   public function addRoute(string $url, string $controller, string $action): void {
+   public function addRoute($url, $controller, $action) {
        $this->routes[$url] = [
            'controller' => $controller,
            'action' => $action
@@ -54,31 +54,37 @@ class Router {
     * @throws \Exception When no matching route is found
     * @return void
     */
-   public function dispatch(string $url): void {
-       // Normalize URL by removing leading slash
-       $url = ltrim($url, '/');
-       
-       // Handle root URL
-       if ($url === '') {
-           $url = '/';
-       }
+    public function dispatch($url) {
+        // Remove base path from URL
+        $basePath = parse_url(BASE_PATH, PHP_URL_PATH);
+        $url = str_replace($basePath, '', $url);
+        
+        // Remove any public/ references
+        $url = str_replace('public/', '', $url);
+        
+        // Remove leading and trailing slashes
+        $url = trim($url, '/');
+        
+        // If URL is empty, treat as root
+        if ($url === '') {
+            $url = '/';
+        }
 
-       // Check if route exists
-       if (array_key_exists($url, $this->routes)) {
-           // Get controller and action from route configuration
-           $controllerName = $this->routes[$url]['controller'];
-           $action = $this->routes[$url]['action'];
-           
-           // Add namespace to controller name
-           $controllerName = "App\\Controllers\\" . $controllerName;
-           
-           // Instantiate controller and call action
-           $controller = new $controllerName();
-           $controller->$action();
-       } else {
-           throw new \Exception("No route found for URL: $url");
-       }
-   }
+        // Check if route exists
+        if (array_key_exists($url, $this->routes)) {
+            $controllerName = $this->routes[$url]['controller'];
+            $action = $this->routes[$url]['action'];
+            
+            // Add namespace to controller name
+            $controllerName = "App\\Controllers\\" . $controllerName;
+            
+            // Instantiate controller and call action
+            $controller = new $controllerName();
+            $controller->$action();
+        } else {
+            throw new \Exception("No route found for URL: $url");
+        }
+    }
 
    /**
     * Gets all registered routes
@@ -86,7 +92,7 @@ class Router {
     * 
     * @return array Array of registered routes with their controllers and actions
     */
-   public function getRoutes(): array {
+   public function getRoutes() {
        return $this->routes;
    }
 
@@ -96,7 +102,7 @@ class Router {
     * @param string $url The URL to check
     * @return bool True if route exists, false otherwise
     */
-   public function routeExists(string $url): bool {
+   public function routeExists($url) {
        return array_key_exists(ltrim($url, '/'), $this->routes);
    }
 }

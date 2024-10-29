@@ -50,7 +50,7 @@ class User
     * @return array Array of User objects
     * @throws \PDOException If query fails
     */
-   public static function findAll(): array
+   public static function findAll()
    {
        $db = Database::getInstance();
        return $db->fetchAll("SELECT * FROM user_details", [], self::class);
@@ -63,7 +63,7 @@ class User
     * @return User|null User object if found, null otherwise
     * @throws \PDOException If query fails
     */
-   public static function findById(int $Id): ?User
+   public static function findById($Id)
    {
        $db = Database::getInstance();
        return $db->fetch(
@@ -80,7 +80,7 @@ class User
     * @return array Array of User objects with specified role
     * @throws \PDOException If query fails
     */
-   public static function findByRole(int $roleId): array
+   public static function findByRole($roleId)
    {
        $db = Database::getInstance();
        return $db->fetchAll(
@@ -97,7 +97,7 @@ class User
     * @return User|null User object if found, null otherwise
     * @throws \PDOException If query fails
     */
-   public static function findByUsername(string $Username): ?User
+   public static function findByUsername($Username)
    {
        $db = Database::getInstance();
        return $db->fetch(
@@ -121,7 +121,7 @@ class User
     * @throws \InvalidArgumentException If validation fails
     * @throws \Exception If user already exists or save fails
     */
-   public function save(): bool
+   public function save()
    {
        $db = Database::getInstance();
 
@@ -153,7 +153,7 @@ class User
     * 
     * @throws \PDOException If deletion fails
     */
-   public function delete(): void
+   public function delete()
    {
        $db = Database::getInstance();
        $db->query("DELETE FROM user_details WHERE Id = ?", [$this->Id]);
@@ -164,7 +164,7 @@ class User
     * 
     * @throws \InvalidArgumentException If validation fails
     */
-   private function validateAndSanitize(): void
+   private function validateAndSanitize()
    {
        // Sanitize string inputs
        $this->Username = htmlspecialchars($this->Username, ENT_QUOTES, 'UTF-8');
@@ -191,7 +191,7 @@ class User
     * 
     * @return bool True if username exists for different user
     */
-   private function usernameExists(): bool
+   private function usernameExists()
    {
        $existingUser = self::findByUsername($this->Username);
        return $existingUser && $existingUser->Id !== $this->Id;
@@ -202,7 +202,7 @@ class User
     * 
     * @throws \InvalidArgumentException If validation fails
     */
-   private function validateNewUser(): void
+   private function validateNewUser()
    {
        if (empty($this->Password)) {
            throw new \InvalidArgumentException("Password is required for new users");
@@ -215,7 +215,7 @@ class User
     * @param Database $db Database instance
     * @throws \PDOException If update fails
     */
-   private function updateExisting(Database $db): void
+   private function updateExisting($db)
    {
        $query = "UPDATE user_details SET username = ?, roleId = ?, projectId = ?, name = ?";
        $params = [$this->Username, $this->RoleID, $this->ProjectId, $this->Name];
@@ -237,7 +237,7 @@ class User
     * @param Database $db Database instance
     * @throws \PDOException If insert fails
     */
-   private function insertNew(Database $db): void
+   private function insertNew($db)
    {
        $query = "INSERT INTO user_details (username, roleId, projectId, password, name) 
                 VALUES (?, ?, ?, ?, ?)";
