@@ -12,11 +12,11 @@
 */
 
 // Load core dependencies
-require_once __DIR__ . '/../app/core/Router.php';
-require_once __DIR__ . '/../app/controllers/HomeController.php';
-require_once __DIR__ . '/../app/controllers/AdminController.php';
-require_once __DIR__ . '/../app/controllers/BugController.php';
-require_once __DIR__ . '/../app/controllers/AuthController.php';
+require_once __DIR__ . '/../app/Core/Router.php';
+require_once __DIR__ . '/../app/Controllers/HomeController.php';
+require_once __DIR__ . '/../app/Controllers/AdminController.php';
+require_once __DIR__ . '/../app/Controllers/BugController.php';
+require_once __DIR__ . '/../app/Controllers/AuthController.php';
 require_once __DIR__ . '/../localEnvSet.php';
 
 /**

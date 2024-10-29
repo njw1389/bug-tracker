@@ -10,7 +10,7 @@ use ZipArchive;
 
 /**
  * AdminController handles all administrative functions of the bug tracking system
- * including user management, project management, and bug management for admin users.
+ * including user management, project management, and bug management for admin & manager users.
  */
 class AdminController {
     /**
