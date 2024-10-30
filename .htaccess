@@ -1,0 +1,19 @@
+# Disable directory listing
+Options -Indexes
+
+# Enable URL rewriting
+RewriteEngine On
+
+# Set the base path for rewrites
+RewriteBase /~njw1389/ISTE341/Projects/bug-tracker/
+
+# If the request is directly to the root URL, redirect to public/
+RewriteCond %{REQUEST_URI} ^/~njw1389/ISTE341/Projects/bug-tracker/?$
+RewriteRule ^(.*)$ public/ [R=301,L]
+
+# If the request is not for a file or directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route all requests through index.php
+RewriteRule ^(.*)$ public/index.php [QSA,L]
