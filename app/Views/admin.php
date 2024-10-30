@@ -1014,7 +1014,7 @@
                 : "Are you sure you want to remove this user from their current project? They will be unassigned from all bugs in their current project.";
 
             if (confirm(confirmMessage)) {
-                fetch('/admin/updateUserProject', {
+                fetch('<?php echo url('/admin/updateUserProject'); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1247,7 +1247,7 @@
             e.preventDefault();
             var formData = new FormData(this);
             
-            fetch('/admin/exportData', {
+            fetch('<?php echo url('/admin/exportData'); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1273,7 +1273,7 @@
             e.preventDefault();
             if (checkPasswordRequirements()) {
                 var formData = new FormData(this);
-                fetch('/admin/saveUser', {
+                fetch('<?php echo url('/admin/saveUser'); ?>', {
                     method: 'POST',
                     body: formData
                 })
@@ -1298,7 +1298,7 @@
         document.getElementById("projectForm").onsubmit = function(e) {
             e.preventDefault();
             var formData = new FormData(this);
-            fetch('/admin/saveProject', {
+            fetch('<?php echo url('/admin/saveProject'); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1320,7 +1320,7 @@
         document.getElementById("bugForm").onsubmit = function(e) {
             e.preventDefault();
             var formData = new FormData(this);
-            fetch('/admin/saveBug', {
+            fetch('<?php echo url('/admin/saveBug'); ?>', {
                 method: 'POST',
                 body: formData
             })
@@ -1371,7 +1371,7 @@
 
             if (timeLeft <= 0) {
                 clearInterval(countdownInterval);
-                window.location.href = '/logout';
+                window.location.href = '<?php echo url('logout'); ?>';
                 return;
             }
 
@@ -1394,7 +1394,7 @@
 
         function deleteProject(projectId, projectName) {
             if (confirm(`Are you sure you want to delete the project "${projectName}" (ID: ${projectId})? This will also delete all associated bugs. This action cannot be undone.`)) {
-                fetch('/admin/deleteProject', {
+                fetch('<?php echo url('/admin/deleteProject'); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1419,7 +1419,7 @@
 
         function deleteBug(bugId) {
             if (confirm(`Are you sure you want to delete the bug (ID: ${bugId})? This action cannot be undone.`)) {
-                fetch('/admin/deleteBug', {
+                fetch('<?php echo url('/admin/deleteBug'); ?>', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1584,10 +1584,7 @@
 
                 var formData = new FormData(this);
                 
-                // Send to the appropriate endpoint based on the page
-                const endpoint = window.location.pathname.includes('admin') ? '/admin/saveBug' : '/bug/saveBug';
-                
-                fetch(endpoint, {
+                fetch('<?php echo url('/admin/saveBug'); ?>', {
                     method: 'POST',
                     body: formData
                 })
