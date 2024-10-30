@@ -710,7 +710,7 @@
 
             if (timeLeft <= 0) {
                 clearInterval(countdownInterval);
-                window.location.href = '/logout';
+                window.location.href = '<?php echo url('logout'); ?>';
                 return;
             }
 
