@@ -68,7 +68,18 @@
         .button:hover {
             background-color: #2980b9;
         }
+        .success {
+            color: #2ecc71;
+            text-align: center;
+            margin-top: 1rem;
+            padding: 0.5rem;
+            background-color: #d5f5e3;
+            border-radius: 4px;
+        }
         .error {
+            background-color: #fbe9e7;
+            padding: 0.5rem;
+            border-radius: 4px;
             color: #e74c3c;
             text-align: center;
             margin-top: 1rem;
@@ -86,10 +97,25 @@
             cursor: pointer;
         }
     </style>
+    <script>
+        // Clear URL parameters without refreshing the page
+        if (window.history.replaceState) {
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    </script>
 </head>
 <body>
-    <div class="container">
+<div class="container">
         <h1>Welcome to Bug Tracker</h1>
+        <?php 
+        if (isset($_GET['message'])) {
+            if ($_GET['message'] === 'loggedout') {
+                echo '<p class="success">Logged out successfully!</p>';
+            } elseif ($_GET['message'] === 'error' && isset($_GET['error'])) {
+                echo '<p class="error">' . htmlspecialchars($_GET['error'], ENT_QUOTES, 'UTF-8') . '</p>';
+            }
+        }
+        ?>
         <form action="<?php echo url('login'); ?>" method="post" class="login-form">
             <div class="form-group">
                 <label for="username">Username:</label>
@@ -104,9 +130,6 @@
             </div>
             <button type="submit" class="button">Login</button>
         </form>
-        <?php if (isset($error)): ?>
-            <p class="error"><?php echo htmlspecialchars($error, ENT_QUOTES, 'UTF-8'); ?></p>
-        <?php endif; ?>
     </div>
 
     <script>

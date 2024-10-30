@@ -20,50 +20,49 @@ class AuthController
     * @return void Redirects to appropriate page or displays login form with error
     */
    public function login()
-   {
-       // Only process POST requests for login
-       if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-           // Extract and validate login credentials
-           $username = $_POST['username'] ?? '';
-           $password = $_POST['password'] ?? '';
+    {
+        // Only process POST requests for login
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            // Extract and validate login credentials
+            $username = $_POST['username'] ?? '';
+            $password = $_POST['password'] ?? '';
 
-           // Validate credential length and presence
-           if (!$username || !$password || strlen($username) > 255 || strlen($password) > 255) {
-               $error = "Username and password are required";
-               require_once __DIR__ . '/../Views/home.php';
-               return;
-           }
+            // Validate credential length and presence
+            if (!$username || !$password || strlen($username) > 255 || strlen($password) > 255) {
+                header('Location: ' . BASE_PATH . '/?message=error&error=' . urlencode("Username and password are required"));
+                exit;
+            }
 
-           // Attempt to find user and verify credentials
-           $user = User::findByUsername($username);
+            // Attempt to find user and verify credentials
+            $user = User::findByUsername($username);
 
-           // Verify credentials with secure password hashing
-           if ($user && $user->Username === $username && password_verify($password, $user->Password)) {
-               // Initialize session with user data
-               SessionManager::login($user->Id, $user->RoleID);
-               SessionManager::start();
-               
-               // Log successful login for audit purposes
-               error_log("User logged in. ID: " . $user->Id . ", Role: " . $user->RoleID);
-               
-               // Route users based on role
-               if ($user->RoleID == 1 || $user->RoleID == 2) { // Admin or Manager roles
-                   header('Location: ' . BASE_PATH . 'admin');
-               } else {
-                   header('Location: ' . BASE_PATH . 'bug');
-               }
-               exit;
-           } else {
-               // Invalid credentials - show error but don't specify which field was wrong
-               // (security best practice)
-               $error = "Invalid username or password";
-               require_once __DIR__ . '/../Views/home.php';
-           }
-       } else {
-           // Non-POST requests redirect to home page
-           header('Location: ' . BASE_PATH . '/');
-       }
-   }
+            // Verify credentials with secure password hashing
+            if ($user && $user->Username === $username && password_verify($password, $user->Password)) {
+                // Initialize session with user data
+                SessionManager::login($user->Id, $user->RoleID);
+                SessionManager::start();
+                
+                // Log successful login for audit purposes
+                error_log("User logged in. ID: " . $user->Id . ", Role: " . $user->RoleID);
+                
+                // Route users based on role
+                if ($user->RoleID == 1 || $user->RoleID == 2) { // Admin or Manager roles
+                    header('Location: ' . BASE_PATH . 'admin');
+                } else {
+                    header('Location: ' . BASE_PATH . 'bug');
+                }
+                exit;
+            } else {
+                // Invalid credentials - redirect to home with error message
+                header('Location: ' . BASE_PATH . '/?message=error&error=' . urlencode("Invalid username or password"));
+                exit;
+            }
+        } else {
+            // Non-POST requests redirect to home page
+            header('Location: ' . BASE_PATH . '/');
+            exit;
+        }
+    }
 
    /**
     * Handles user logout
@@ -77,7 +76,7 @@ class AuthController
        SessionManager::logout();
        
        // Redirect to home page
-       header('Location: ' . BASE_PATH . '/');
+       header('Location: ' . BASE_PATH . '/?message=loggedout');
        exit;
    }
 
