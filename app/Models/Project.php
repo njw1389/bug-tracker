@@ -66,24 +66,33 @@ class Project
     * @throws \InvalidArgumentException If validation fails
     * @throws \PDOException If database operation fails
     */
-   public function save()
-   {
-       $db = Database::getInstance();
-
-       // Validate and sanitize project name
-       $this->validateAndSanitize();
-
-       try {
-           if ($this->Id) {
-               $this->updateExisting($db);
-           } else {
-               $this->insertNew($db);
-           }
-       } catch (\PDOException $e) {
-           error_log("Database error in Project save: " . $e->getMessage());
-           throw new \PDOException("Failed to save project: " . $e->getMessage());
-       }
-   }
+    public function save()
+    {
+        $db = Database::getInstance();
+ 
+        // Validate and sanitize project name
+        $this->validateAndSanitize();
+ 
+        try {
+            if ($this->Id) {
+                // Update existing project - note the change in SQL query
+                $db->query(
+                    "UPDATE project SET Project = ? WHERE Id = ?",
+                    [$this->Project, $this->Id]
+                );
+            } else {
+                // Insert new project
+                $db->query(
+                    "INSERT INTO project (Project) VALUES (?)",
+                    [$this->Project]
+                );
+                $this->Id = $db->getConnection()->lastInsertId();
+            }
+        } catch (\PDOException $e) {
+            error_log("Database error in Project save: " . $e->getMessage());
+            throw new \PDOException("Failed to save project: " . $e->getMessage());
+        }
+    }
 
    /**
     * Validates and sanitizes project properties
@@ -99,36 +108,5 @@ class Project
        if (empty($this->Project) || strlen($this->Project) > 255) {
            throw new \InvalidArgumentException("Project name must not be empty and must be less than 255 characters");
        }
-   }
-
-   /**
-    * Updates an existing project
-    * 
-    * @param Database $db Database instance
-    * @return void
-    * @throws \PDOException If update fails
-    */
-   private function updateExisting($db)
-   {
-       $db->query(
-           "UPDATE project SET Project = ? WHERE Id = ?",
-           [$this->Project, $this->Id]
-       );
-   }
-
-   /**
-    * Inserts a new project
-    * 
-    * @param Database $db Database instance
-    * @return void
-    * @throws \PDOException If insert fails
-    */
-   private function insertNew($db)
-   {
-       $db->query(
-           "INSERT INTO project (Project) VALUES (?)",
-           [$this->Project]
-       );
-       $this->Id = $db->getConnection()->lastInsertId();
    }
 }
