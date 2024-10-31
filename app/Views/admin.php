@@ -1128,10 +1128,63 @@
             });
         }
 
+        // Session management initialization
+        function initializeSessionManagement() {
+            const sessionExpirationBanner = document.getElementById('session-expiration-banner');
+            const sessionCountdown = document.getElementById('session-countdown');
+            let sessionExpirationTime = <?php echo json_encode(App\Core\SessionManager::getSessionExpirationTime()); ?>;
+            let countdownInterval;
+
+            function updateSessionCountdown() {
+                let now = Math.floor(Date.now() / 1000);
+                let timeLeft = sessionExpirationTime - now;
+
+                if (timeLeft <= 900) { // Show banner when 15 minutes or less remain
+                    sessionExpirationBanner.style.display = 'block';
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(countdownInterval);
+                    window.location.href = '<?php echo url('logout'); ?>';
+                    return;
+                }
+
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                sessionCountdown.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            }
+
+            function refreshSession() {
+                fetch('<?php echo url('refresh-session'); ?>', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            sessionExpirationTime = data.newExpirationTime;
+                            sessionExpirationBanner.style.display = 'none';
+                        }
+                    });
+            }
+
+            // Start countdown immediately
+            countdownInterval = setInterval(updateSessionCountdown, 1000);
+
+            // Set up session refresh events
+            document.addEventListener('click', refreshSession);
+            document.addEventListener('keypress', refreshSession);
+
+            // Debounced scroll handler
+            let scrollTimeout;
+            window.addEventListener('scroll', function() {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(refreshSession, 0);
+            });
+        }
+
         // Call this function when the page loads
         document.addEventListener('DOMContentLoaded', function() {
             initializeData();
             updateStatusAndPriority();
+            initializeSessionManagement();
         });
 
         function viewBugDetails(bug) {
@@ -1331,41 +1384,6 @@
             }
         });
 
-        // Session expiration countdown
-        let sessionExpirationTime = <?php echo json_encode(App\Core\SessionManager::getSessionExpirationTime()); ?>;
-        let countdownInterval;
-
-        function updateSessionCountdown() {
-            let now = Math.floor(Date.now() / 1000);
-            let timeLeft = sessionExpirationTime - now;
-
-            if (timeLeft <= 900) { // Show banner when 15 minutes or less remain
-                document.getElementById('session-expiration-banner').style.display = 'block';
-            }
-
-            if (timeLeft <= 0) {
-                clearInterval(countdownInterval);
-                window.location.href = '<?php echo url('logout'); ?>';
-                return;
-            }
-
-            let minutes = Math.floor(timeLeft / 60);
-            let seconds = timeLeft % 60;
-            document.getElementById('session-countdown').textContent = 
-                `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function refreshSession() {
-            fetch('<?php echo url('refresh-session'); ?>', { method: 'POST' })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        sessionExpirationTime = data.newExpirationTime;
-                        document.getElementById('session-expiration-banner').style.display = 'none';
-                    }
-                });
-        }
-
         function deleteProject(projectId, projectName) {
             if (confirm(`Are you sure you want to delete the project "${projectName}" (ID: ${projectId})? This will also delete all associated bugs. This action cannot be undone.`)) {
                 fetch('<?php echo url('/admin/deleteProject'); ?>', {
@@ -1415,19 +1433,6 @@
                 });
             }
         }
-
-        // Start countdown
-        countdownInterval = setInterval(updateSessionCountdown, 1000);
-
-        // Refresh session on user interaction
-        document.addEventListener('click', refreshSession);
-        document.addEventListener('keypress', refreshSession);
-
-        let scrollTimeout;
-        window.addEventListener('scroll', function() {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(refreshSession, 0); // Debounce scroll events
-        });
 
         // Add event listeners for user modal
         document.addEventListener('DOMContentLoaded', function() {
