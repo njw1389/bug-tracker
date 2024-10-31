@@ -1,7 +1,7 @@
 # Bug Tracker Project - Implementation Details
 
 ## Overview
-This document outlines the key architectural decisions, enhancements, and deviations from the initial design diagrams and stubbed code implementation. The final solution includes several additional features and architectural improvements that went beyond the original requirements to create a more robust and secure bug tracking system.
+This document outlines the key architectural enhancements, and deviations from the initial design diagrams and stubbed code implementation. The final solution includes several additional features and architectural improvements that went beyond the original requirements to create a more robust and secure bug tracking system.
 
 ## Major Enhancements
 
@@ -81,3 +81,84 @@ This document outlines the key architectural decisions, enhancements, and deviat
 
 ## Conclusion
 The final implementation significantly expanded upon the initial design while maintaining its core MVC architecture. The additions focused on security, usability, and data integrity, resulting in a more robust and user-friendly bug tracking system. These enhancements make the system more suitable for production use while maintaining good coding practices and security standards.
+
+## Submission Error Fix Additions
+I had issues with the routing urls so with the following changes I got it working.
+
+### Environment Configuration (config/config.php)
+The application uses environment-specific configuration to handle different paths and settings between local development and production:
+
+```php
+<?php
+// Determine if we're in a local environment
+$isLocal = false;
+
+// Set the base path depending on environment
+if ($isLocal) {
+    define('BASE_PATH', '/');
+} else {
+    // Remove 'public' from the path for production
+    define('BASE_PATH', '/~njw1389/ISTE341/Projects/bug-tracker/');
+}
+
+// Set the public path
+define('PUBLIC_PATH', BASE_PATH . 'public/');
+
+// Helper function for assets
+function asset($path) {
+    return PUBLIC_PATH . $path;
+}
+
+// Helper function for URLs
+function url($path = '') {
+    return BASE_PATH . ltrim($path, '/');
+}
+
+// Define application paths
+define('APP_PATH', __DIR__ . '/../app/');
+define('VIEW_PATH', APP_PATH . 'Views/');
+define('CONTROLLER_PATH', APP_PATH . 'Controllers/');
+```
+
+### Apache Configuration (.htaccess)
+The application uses Apache's mod_rewrite to handle clean URLs and routing:
+
+```apache
+# Disable directory listing
+Options -Indexes
+
+# Enable URL rewriting
+RewriteEngine On
+
+# Set the base path for rewrites
+RewriteBase /~njw1389/ISTE341/Projects/bug-tracker/
+
+# If the request is directly to the root URL, redirect to public/
+RewriteCond %{REQUEST_URI} ^/~njw1389/ISTE341/Projects/bug-tracker/?$
+RewriteRule ^(.*)$ public/ [R=301,L]
+
+# If the request is not for a file or directory
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Route all requests through index.php
+RewriteRule ^(.*)$ public/index.php [QSA,L]
+```
+
+### Router Changes (Router.php)
+The Router class was enhanced to handle both local and production environments:
+
+1. Base Path Handling:
+   - Removes the base path from URLs before routing
+   - Handles both local and production paths correctly
+   - Removes any 'public/' references from the URL
+
+2. URL Normalization:
+   - Removes leading and trailing slashes
+   - Normalizes empty URLs to root path ('/')
+   - Preserves query strings with QSA flag
+
+3. Error Handling:
+   - Better exception handling for 404s
+   - Improved error messages
+   - Logging of routing errors
