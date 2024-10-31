@@ -98,7 +98,6 @@
             background-color: #27ae60;
         }
 
-        /* Modal Styles */
         .modal {
             display: none;
             position: fixed;
