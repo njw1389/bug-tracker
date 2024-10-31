@@ -1,6 +1,6 @@
 <?php
 // Determine if we're in a local environment
-$isLocal = ($_SERVER['HTTP_HOST'] === 'localhost' || $_SERVER['HTTP_HOST'] === '127.0.0.1');
+$isLocal = false;
 
 // Set the base path depending on environment
 if ($isLocal) {
