@@ -1,5 +1,4 @@
 <?php
-// Determine if we're in a local environment
 $isLocal = false;
 
 // Set the base path depending on environment
