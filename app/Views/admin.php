@@ -1244,14 +1244,22 @@
             document.getElementById("bugProjectId").value = bug.projectId;
             document.getElementById("summary").value = bug.summary;
             document.getElementById("description").value = bug.description;
+            document.getElementById("assignedToId").value = bug.assignedToId || "";
             document.getElementById("statusId").value = bug.statusId;
             document.getElementById("priorityId").value = bug.priorityId;
-            document.getElementById("targetDate").value = bug.targetDate || "";
-            document.getElementById("fixDescription").value = bug.fixDescription || "";
             
-            // Update assigned users dropdown before setting the value
-            updateAssignedUserOptions(bug.projectId);
-            document.getElementById("assignedToId").value = bug.assignedToId || "";
+            // Format the target date for the date input
+            if (bug.targetDate) {
+                const dateObj = new Date(bug.targetDate);
+                const year = dateObj.getFullYear();
+                const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const day = String(dateObj.getDate()).padStart(2, '0');
+                document.getElementById("targetDate").value = `${year}-${month}-${day}`;
+            } else {
+                document.getElementById("targetDate").value = "";
+            }
+            
+            document.getElementById("fixDescription").value = bug.fixDescription || "";
             
             handleFixDescriptionField(bug.statusId.toString());
             
@@ -1456,7 +1464,15 @@
                 document.getElementById("description").value = bug.description;
                 document.getElementById("statusId").value = bug.statusId;
                 document.getElementById("priorityId").value = bug.priorityId;
-                document.getElementById("targetDate").value = bug.targetDate || "";
+                
+                // Format the target date for the date input
+                if (bug.targetDate) {
+                    const dateStr = bug.targetDate.split(' ')[0]; // Get just the date part (YYYY-MM-DD)
+                    document.getElementById("targetDate").value = dateStr;
+                } else {
+                    document.getElementById("targetDate").value = "";
+                }
+                
                 document.getElementById("fixDescription").value = bug.fixDescription || "";
                 
                 // Update assigned users dropdown and set correct value
