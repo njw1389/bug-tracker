@@ -75,7 +75,7 @@ class Project
  
         try {
             if ($this->Id) {
-                // Update existing project - note the change in SQL query
+                // Update existing project
                 $db->query(
                     "UPDATE project SET Project = ? WHERE Id = ?",
                     [$this->Project, $this->Id]
