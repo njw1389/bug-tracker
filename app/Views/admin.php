@@ -759,18 +759,19 @@
                 <label for="assignedToId">Assigned To:</label>
                 <select id="assignedToId" name="assignedToId">
                     <option value="">Unassigned</option>
-                    <?php if ($userRole <= 2): ?>
-                        <?php foreach ($users as $u): ?>
-                            <?php if ($u->RoleID == 3): ?>
+                    <?php 
+                    $currentUserId = App\Core\SessionManager::get('user_id');
+                    
+                        foreach ($users as $u): 
+                            if ($u->RoleID == 3): // Only show regular users
+                                ?>
                                 <option value="<?php echo $u->Id; ?>">
-                                    <?php echo htmlspecialchars($u->Name); ?>
-                                    <?php echo ($u->Id == $userId) ? ' (Me)' : ''; ?>
+                                    <?php echo htmlspecialchars($u->Name) . ($u->Id == $currentUserId ? ' (Me)' : ''); ?>
                                 </option>
-                            <?php endif; ?>
-                        <?php endforeach; ?>
-                    <?php else: ?>
-                        <option value="<?php echo $userId; ?>"><?php echo htmlspecialchars($WelcomeUser->Name); ?> (Me)</option>
-                    <?php endif; ?>
+                                <?php
+                            endif;
+                        endforeach;
+                    ?>
                 </select>
                 
                 <label for="statusId">Status:</label>
@@ -1433,155 +1434,6 @@
                 });
             }
         }
-
-        // Add event listeners for user modal
-        document.addEventListener('DOMContentLoaded', function() {
-            var roleSelect = document.getElementById('roleId');
-            roleSelect.addEventListener('change', updateProjectSelect);
-
-            var projectSelect = document.getElementById('projectId');
-            projectSelect.addEventListener('change', function() {
-                confirmProjectChange(this);
-            });
-
-            var userModal = document.getElementById('userModal');
-            userModal.addEventListener('show', updateProjectSelect);
-        });
-
-        // Bug form functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const bugProjectIdSelect = document.getElementById('bugProjectId');
-            const assignedToSelect = document.getElementById('assignedToId');
-            const statusSelect = document.getElementById('statusId');
-
-            // Create an object to store users by project
-            const usersByProject = <?php 
-                $usersByProject = [];
-                foreach ($users as $user) {
-                    if ($user->RoleID == 3 && $user->ProjectId) {
-                        $usersByProject[$user->ProjectId][] = [
-                            'id' => $user->Id,
-                            'name' => htmlspecialchars($user->Name)
-                        ];
-                    }
-                }
-                echo json_encode($usersByProject);
-            ?>;
-
-            function updateAssignedToOptions() {
-                const projectId = bugProjectIdSelect.value;
-                assignedToSelect.innerHTML = '<option value="">Unassigned</option>';
-
-                if (usersByProject[projectId]) {
-                    usersByProject[projectId].forEach(user => {
-                        const option = document.createElement('option');
-                        option.value = user.id;
-                        option.textContent = user.name;
-                        assignedToSelect.appendChild(option);
-                    });
-                }
-            }
-
-            bugProjectIdSelect.addEventListener('change', function() {
-                // Reset assigned user and status when project changes
-                assignedToSelect.value = "";
-                statusSelect.value = "1"; // Set to "Unassigned"
-                updateAssignedToOptions();
-            });
-
-            assignedToSelect.addEventListener('change', function() {
-                if (this.value) {
-                    // If a user is assigned, set status to "Assigned"
-                    statusSelect.value = "2";
-                } else {
-                    // If unassigned, set status to "Unassigned"
-                    statusSelect.value = "1";
-                }
-            });
-
-            statusSelect.addEventListener('change', function() {
-                if (this.value === "1") {
-                    // If status is set to "Unassigned", clear the assigned user
-                    assignedToSelect.value = "";
-                } else if (this.value === "2" && !assignedToSelect.value) {
-                    // If status is set to "Assigned" but no user is assigned, prompt to select a user
-                    alert("Please assign a user to this bug.");
-                    this.value = "1"; // Reset status to "Unassigned"
-                }
-                // Note: We don't change anything if status is set to "Closed" (3)
-            });
-
-            // Call updateAssignedToOptions when opening the modal to ensure correct initial state
-            window.openAddBugModal = function() {
-                document.getElementById("bugModalTitle").innerText = "Add Bug";
-                document.getElementById("bugForm").reset();
-                document.getElementById("bugId").value = "";
-                updateAssignedToOptions();
-                openModal("bugModal");
-            };
-
-            window.openEditBugModal = function(bug) {
-                document.getElementById("bugModalTitle").innerText = "Edit Bug";
-                // Populate form fields with bug data
-                document.getElementById("bugId").value = bug.id;
-                document.getElementById("bugProjectId").value = bug.projectId;
-                document.getElementById("summary").value = bug.summary;
-                document.getElementById("description").value = bug.description;
-                document.getElementById("statusId").value = bug.statusId;
-                document.getElementById("priorityId").value = bug.priorityId;
-                document.getElementById("targetDate").value = bug.targetDate;
-                
-                updateAssignedToOptions();
-                document.getElementById("assignedToId").value = bug.assignedToId || "";
-                
-                openModal("bugModal");
-            };
-        });
-    
-        // Add event listeners when the document loads
-        document.addEventListener('DOMContentLoaded', function() {
-            const statusSelect = document.getElementById('statusId');
-            const bugForm = document.getElementById('bugForm');
-
-            // Handle status changes
-            statusSelect.addEventListener('change', function() {
-                handleFixDescriptionField(this.value);
-            });
-
-            // Form submission handler
-            bugForm.onsubmit = function(e) {
-                e.preventDefault();
-                
-                // Validate fix description when status is Closed
-                const status = document.getElementById('statusId').value;
-                const fixDescription = document.getElementById('fixDescription').value;
-                
-                if (status === "3" && !fixDescription.trim()) {
-                    alert("Fix description is required when closing a bug");
-                    return;
-                }
-
-                var formData = new FormData(this);
-                
-                fetch('<?php echo url('/admin/saveBug'); ?>', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert("Bug saved successfully");
-                        location.reload();
-                    } else {
-                        alert("Error saving bug: " + data.message);
-                    }
-                })
-                .catch((error) => {
-                    console.error('Error:', error);
-                    alert("An error occurred while saving the bug");
-                });
-            };
-        });
     </script>
 </body>
 </html>
