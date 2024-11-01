@@ -941,7 +941,7 @@
                 fixDescriptionField.required = false;
                 fixDescriptionField.classList.add('disabled-field');
                 fixDescriptionField.placeholder = "Only available when bug is closed";
-                fixDescriptionField.value = ''; // Clear the value when disabled
+                fixDescriptionField.value = '';
             }
         }
 
@@ -1260,7 +1260,6 @@
             }
             
             document.getElementById("fixDescription").value = bug.fixDescription || "";
-            
             handleFixDescriptionField(bug.statusId.toString());
             
             openModal("bugModal");
@@ -1380,6 +1379,43 @@
             });
         };
 
+        document.getElementById("bugForm").onsubmit = function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const statusId = document.getElementById("statusId").value;
+            const originalStatusId = this.getAttribute('data-original-status') || statusId;
+            
+            // If bug is being closed (status changed to 3)
+            if (statusId === "3" && originalStatusId !== "3") {
+                formData.append('dateClosed', new Date().toISOString().slice(0, 19).replace('T', ' '));
+            }
+            
+            // If bug is being reopened (status changed from 3)
+            if (statusId !== "3" && originalStatusId === "3") {
+                formData.append('dateClosed', '');
+                formData.append('fixDescription', '');
+            }
+            
+            fetch('<?php echo url('/admin/saveBug'); ?>', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Bug saved successfully");
+                    location.reload();
+                } else {
+                    alert("Error saving bug: " + data.message);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("An error occurred while saving the bug");
+            });
+        };
+
         // Bug Modal Management
         document.addEventListener('DOMContentLoaded', function() {
             const bugProjectIdSelect = document.getElementById('bugProjectId');
@@ -1442,6 +1478,13 @@
                 } else if (this.value === "2" && !assignedToSelect.value) {
                     alert("Please assign a user to this bug.");
                     this.value = "1";
+                }
+                handleFixDescriptionField(this.value);
+            });
+
+            statusSelect.addEventListener('change', function() {
+                if (!bugForm.hasAttribute('data-original-status')) {
+                    bugForm.setAttribute('data-original-status', this.value);
                 }
                 handleFixDescriptionField(this.value);
             });

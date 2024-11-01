@@ -334,12 +334,11 @@ class AdminController {
      */
     public function saveBug() {
         SessionManager::start();
-        // Verify user is logged in and has appropriate role
         if (!SessionManager::isLoggedIn() || SessionManager::get('role') > 2) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
             return;
         }
-
+    
         // Validate and sanitize input data
         $bugId = filter_input(INPUT_POST, 'bugId', FILTER_VALIDATE_INT);
         $projectId = filter_input(INPUT_POST, 'bugProjectId', FILTER_VALIDATE_INT);
@@ -349,13 +348,15 @@ class AdminController {
         $statusId = filter_input(INPUT_POST, 'statusId', FILTER_VALIDATE_INT);
         $priorityId = filter_input(INPUT_POST, 'priorityId', FILTER_VALIDATE_INT);
         $targetDate = htmlspecialchars($_POST['targetDate'] ?? '', ENT_QUOTES, 'UTF-8');
-
-        // Validate required fields and field lengths
-        if (!$projectId || !$summary || !$description || !$statusId || !$priorityId || strlen($summary) > 255 || strlen($description) > 1000) {
+        $fixDescription = htmlspecialchars($_POST['fixDescription'] ?? '', ENT_QUOTES, 'UTF-8');
+        $dateClosed = isset($_POST['dateClosed']) ? $_POST['dateClosed'] : null;
+    
+        if (!$projectId || !$summary || !$description || !$statusId || !$priorityId || 
+            strlen($summary) > 255 || strlen($description) > 1000) {
             $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields OR Invalid input data']);
             return;
         }
-
+    
         // Get existing bug or create new one
         $bug = $bugId ? Bug::findById($bugId) : new Bug();
         
@@ -364,7 +365,7 @@ class AdminController {
             $bug->ownerId = SessionManager::get('user_id');
             $bug->dateRaised = date('Y-m-d H:i:s');
         }
-
+    
         // Update bug properties
         $bug->projectId = $projectId;
         $bug->assignedToId = $assignedToId ?: null;
@@ -373,7 +374,16 @@ class AdminController {
         $bug->summary = $summary;
         $bug->description = $description;
         $bug->targetDate = $targetDate ?: null;
-
+        
+        // Handle closing and reopening bugs
+        if ($statusId == 3) { // Bug is being closed
+            $bug->dateClosed = $dateClosed ?: date('Y-m-d H:i:s');
+            $bug->fixDescription = $fixDescription;
+        } else { // Bug is open or being reopened
+            $bug->dateClosed = null;
+            $bug->fixDescription = null;
+        }
+    
         try {
             $bug->save();
             $this->sendJsonResponse(['success' => true]);
