@@ -682,7 +682,6 @@
                 
                 <label for="projectId">Project:</label>
                 <select id="projectId" name="projectId" onchange="confirmProjectChange(this)">
-                    <option value="">None</option>
                     <?php foreach ($projects as $project): ?>
                         <option value="<?php echo $project->Id; ?>"><?php echo htmlspecialchars($project->Project); ?></option>
                     <?php endforeach; ?>
