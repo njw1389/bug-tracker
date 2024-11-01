@@ -1095,9 +1095,6 @@
         // Bug management
         const projectNames = {};
         const userNames = {};
-        
-        // Create an object to store users by project
-        const usersByProject = {};
 
         // This function should be called when the page loads to populate the projectNames object
         function initializeData() {
@@ -1108,41 +1105,6 @@
             <?php foreach ($users as $user): ?>
             userNames[<?php echo $user->Id; ?>] = "<?php echo htmlspecialchars($user->Name, ENT_QUOTES, 'UTF-8'); ?>";
             <?php endforeach; ?>
-
-            // Initialize usersByProject mapping
-            <?php
-            foreach ($users as $user) {
-                if ($user->RoleID == 3 && $user->ProjectId) { // Only regular users
-                    echo "if (!usersByProject[{$user->ProjectId}]) usersByProject[{$user->ProjectId}] = [];\n";
-                    echo "usersByProject[{$user->ProjectId}].push({
-                        id: {$user->Id},
-                        name: " . json_encode(htmlspecialchars($user->Name)) . "
-                    });\n";
-                }
-            }
-            ?>
-        }
-
-        function updateAssignedUserOptions(projectId) {
-            const assignedToSelect = document.getElementById('assignedToId');
-            const statusSelect = document.getElementById('statusId');
-            
-            // Clear current options and add unassigned option
-            assignedToSelect.innerHTML = '<option value="">Unassigned</option>';
-            
-            // Reset to unassigned status
-            statusSelect.value = "1";
-            assignedToSelect.value = "";
-
-            // Add users from the selected project
-            if (usersByProject[projectId]) {
-                usersByProject[projectId].forEach(user => {
-                    const option = document.createElement('option');
-                    option.value = user.id;
-                    option.textContent = user.name + (user.id == currentUserId ? ' (Me)' : '');
-                    assignedToSelect.appendChild(option);
-                });
-            }
         }
 
         const currentUserId = <?php echo json_encode(App\Core\SessionManager::get('user_id')); ?>;
@@ -1410,17 +1372,54 @@
             });
         };
 
+        // Bug Modal Management
         document.addEventListener('DOMContentLoaded', function() {
             const bugProjectIdSelect = document.getElementById('bugProjectId');
             const assignedToSelect = document.getElementById('assignedToId');
             const statusSelect = document.getElementById('statusId');
+            const bugForm = document.getElementById('bugForm');
+
+            // Create an object to store users by project
+            const usersByProject = {};
             
-            // Add project change handler
+            // Initialize usersByProject data
+            function initializeUsersByProject() {
+                <?php 
+                    foreach ($users as $user) {
+                        if ($user->RoleID == 3 && $user->ProjectId) {
+                            echo "if (!usersByProject[{$user->ProjectId}]) usersByProject[{$user->ProjectId}] = [];\n";
+                            echo "usersByProject[{$user->ProjectId}].push({
+                                id: {$user->Id},
+                                name: " . json_encode(htmlspecialchars($user->Name)) . "
+                            });\n";
+                        }
+                    }
+                ?>
+            }
+
+            function updateAssignedToOptions(projectId, selectedUserId = null) {
+                assignedToSelect.innerHTML = '<option value="">Unassigned</option>';
+
+                if (usersByProject[projectId]) {
+                    usersByProject[projectId].forEach(user => {
+                        const option = document.createElement('option');
+                        option.value = user.id;
+                        option.textContent = user.name + (user.id == currentUserId ? ' (Me)' : '');
+                        if (selectedUserId && user.id == selectedUserId) {
+                            option.selected = true;
+                        }
+                        assignedToSelect.appendChild(option);
+                    });
+                }
+            }
+
             bugProjectIdSelect.addEventListener('change', function() {
-                updateAssignedUserOptions(this.value);
+                updateAssignedToOptions(this.value);
+                if (!assignedToSelect.value) {
+                    statusSelect.value = "1"; // Set to "Unassigned" only if no user is assigned
+                }
             });
 
-            // Handle assigned user changes
             assignedToSelect.addEventListener('change', function() {
                 if (this.value) {
                     statusSelect.value = "2"; // Assigned
@@ -1429,7 +1428,6 @@
                 }
             });
 
-            // Handle status changes
             statusSelect.addEventListener('change', function() {
                 if (this.value === "1") {
                     assignedToSelect.value = "";
@@ -1439,6 +1437,37 @@
                 }
                 handleFixDescriptionField(this.value);
             });
+
+            window.openAddBugModal = function() {
+                document.getElementById("bugModalTitle").innerText = "Add Bug";
+                bugForm.reset();
+                document.getElementById("bugId").value = "";
+                document.getElementById("bugProjectId").value = "<?php echo $user->ProjectId; ?>";
+                updateAssignedToOptions(document.getElementById("bugProjectId").value);
+                handleFixDescriptionField("1");
+                openModal("bugModal");
+            };
+
+            window.openEditBugModal = function(bug) {
+                document.getElementById("bugModalTitle").innerText = "Edit Bug";
+                document.getElementById("bugId").value = bug.id;
+                document.getElementById("bugProjectId").value = bug.projectId;
+                document.getElementById("summary").value = bug.summary;
+                document.getElementById("description").value = bug.description;
+                document.getElementById("statusId").value = bug.statusId;
+                document.getElementById("priorityId").value = bug.priorityId;
+                document.getElementById("targetDate").value = bug.targetDate || "";
+                document.getElementById("fixDescription").value = bug.fixDescription || "";
+                
+                // Update assigned users dropdown and set correct value
+                updateAssignedToOptions(bug.projectId, bug.assignedToId);
+                
+                handleFixDescriptionField(bug.statusId.toString());
+                openModal("bugModal");
+            };
+
+            // Initialize data when page loads
+            initializeUsersByProject();
         });
 
         document.getElementById("updatePassword").addEventListener("change", function() {
