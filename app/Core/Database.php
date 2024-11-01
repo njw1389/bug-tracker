@@ -40,7 +40,7 @@ class Database
    {
        // Set PDO options for security and functionality
        $options = [
-           PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,    // Throw exceptions for errors
+           PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,   // Throw exceptions for errors
            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,         // Return arrays indexed by column name
            PDO::ATTR_EMULATE_PREPARES   => false,                    // Use real prepared statements
        ];
