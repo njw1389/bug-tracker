@@ -775,7 +775,6 @@
                     alert("Please assign a user to this bug.");
                     this.value = "1"; // Reset status to "Unassigned"
                 }
-                // Note: We don't change anything if status is set to "Closed" (3)
             });
         });
 

@@ -38,15 +38,6 @@ class Database
     */
    private function __construct()
    {
-       // Get database configuration from environment
-       $host = getenv('DB_SERVER');
-       $db   = getenv('DB');
-       $user = getenv('DB_USER');
-       $pass = getenv('DB_PASSWORD');
-
-       // Configure database connection
-       $dsn = "mysql:host=$host;dbname=$db;charset=utf8mb4";
-       
        // Set PDO options for security and functionality
        $options = [
            PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,    // Throw exceptions for errors
@@ -56,7 +47,7 @@ class Database
 
        try {
            // Establish connection
-           $this->connection = new PDO($dsn, $user, $pass, $options);
+           $this->connection = new PDO(getenv('DB_DSN'), getenv('DB_USER'), getenv('DB_PASSWORD'), $options);
        } catch (PDOException $e) {
            // Rethrow with connection details sanitized
            throw new PDOException($e->getMessage(), (int)$e->getCode());

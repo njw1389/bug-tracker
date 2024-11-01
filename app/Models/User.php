@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Core\Database;
-use App\Core\FileCache as Cache;
 
 /**
 * User Model represents and manages user accounts in the system
