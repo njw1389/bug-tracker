@@ -125,81 +125,98 @@ class BugController {
     * 
     * @return void JSON response indicating success/failure
     */
-   public function saveBug() {
-       SessionManager::start();
-       // Verify authentication
-       if (!SessionManager::isLoggedIn()) {
-           $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
-           return;
-       }
-
-       // Validate and sanitize input
-       $bugId = filter_input(INPUT_POST, 'bugId', FILTER_VALIDATE_INT);
-       $projectId = filter_input(INPUT_POST, 'bugProjectId', FILTER_VALIDATE_INT);
-       $summary = htmlspecialchars($_POST['summary'] ?? '', ENT_QUOTES, 'UTF-8');
-       $description = htmlspecialchars($_POST['description'] ?? '', ENT_QUOTES, 'UTF-8');
-       $assignedToId = filter_input(INPUT_POST, 'assignedToId', FILTER_VALIDATE_INT);
-       $statusId = filter_input(INPUT_POST, 'statusId', FILTER_VALIDATE_INT);
-       $priorityId = filter_input(INPUT_POST, 'priorityId', FILTER_VALIDATE_INT);
-       $targetDate = htmlspecialchars($_POST['targetDate'] ?? '', ENT_QUOTES, 'UTF-8');
-
-       // Get user context
-       $userId = SessionManager::get('user_id');
-       $userRole = SessionManager::get('role');
-       $user = User::findById($userId);
-
-       // Validate required fields and field lengths
-       if (!$projectId || !$summary || !$description || !$statusId || !$priorityId || 
-           strlen($summary) > 255 || strlen($description) > 1000) {
-           $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields']);
-           return;
-       }
-
-       // Enforce role-based permissions
-       if ($userRole > 2) {
-           // Regular users can only assign to themselves
-           if ($assignedToId && $assignedToId != $userId) {
-               $this->sendJsonResponse(['success' => false, 'message' => 'You can only assign bugs to yourself']);
-               return;
-           }
-           // Regular users can only work with their project's bugs
-           if ($projectId != $user->ProjectId) {
-               $this->sendJsonResponse(['success' => false, 'message' => 'You can only create/edit bugs for your own project']);
-               return;
-           }
-       }
-
-       // Get existing bug or create new one
-       $bug = $bugId ? Bug::findById($bugId) : new Bug();
-
-       // Verify edit permissions
-       if ($bugId && $userRole > 2 && $bug->assignedToId != $userId && $bug->ownerId != $userId) {
-           $this->sendJsonResponse(['success' => false, 'message' => 'You do not have permission to edit this bug']);
-           return;
-       }
-
-       // Update bug properties
-       $bug->projectId = $projectId;
-       $bug->ownerId = $bugId ? $bug->ownerId : $userId; // Preserve original owner
-       $bug->assignedToId = $assignedToId ?: null;
-       $bug->statusId = $statusId;
-       $bug->priorityId = $priorityId;
-       $bug->summary = $summary;
-       $bug->description = $description;
-       $bug->targetDate = $targetDate ?: null;
-
-       // Set creation date for new bugs
-       if (!$bugId) {
-           $bug->dateRaised = date('Y-m-d H:i:s');
-       }
-
-       try {
-           $bug->save();
-           $this->sendJsonResponse(['success' => true]);
-       } catch (\Exception $e) {
-           $this->sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
-       }
-   }
+    public function saveBug() {
+        SessionManager::start();
+        // Verify authentication
+        if (!SessionManager::isLoggedIn()) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Unauthorized access']);
+            return;
+        }
+    
+        // Validate and sanitize input
+        $bugId = filter_input(INPUT_POST, 'bugId', FILTER_VALIDATE_INT);
+        $projectId = filter_input(INPUT_POST, 'bugProjectId', FILTER_VALIDATE_INT);
+        $summary = htmlspecialchars($_POST['summary'] ?? '', ENT_QUOTES, 'UTF-8');
+        $description = htmlspecialchars($_POST['description'] ?? '', ENT_QUOTES, 'UTF-8');
+        $assignedToId = filter_input(INPUT_POST, 'assignedToId', FILTER_VALIDATE_INT);
+        $statusId = filter_input(INPUT_POST, 'statusId', FILTER_VALIDATE_INT);
+        $priorityId = filter_input(INPUT_POST, 'priorityId', FILTER_VALIDATE_INT);
+        $targetDate = htmlspecialchars($_POST['targetDate'] ?? '', ENT_QUOTES, 'UTF-8');
+        $fixDescription = htmlspecialchars($_POST['fixDescription'] ?? '', ENT_QUOTES, 'UTF-8');
+        $dateClosed = isset($_POST['dateClosed']) ? $_POST['dateClosed'] : null;
+    
+        // Get user context
+        $userId = SessionManager::get('user_id');
+        $userRole = SessionManager::get('role');
+        $user = User::findById($userId);
+    
+        // Validate required fields and field lengths
+        if (!$projectId || !$summary || !$description || !$statusId || !$priorityId || 
+            strlen($summary) > 255 || strlen($description) > 1000) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Missing required fields']);
+            return;
+        }
+    
+        // Validate fix description when status is closed
+        if ($statusId == 3 && empty($fixDescription)) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'Fix description is required when closing a bug']);
+            return;
+        }
+    
+        // Enforce role-based permissions
+        if ($userRole > 2) {
+            // Regular users can only assign to themselves
+            if ($assignedToId && $assignedToId != $userId) {
+                $this->sendJsonResponse(['success' => false, 'message' => 'You can only assign bugs to yourself']);
+                return;
+            }
+            // Regular users can only work with their project's bugs
+            if ($projectId != $user->ProjectId) {
+                $this->sendJsonResponse(['success' => false, 'message' => 'You can only create/edit bugs for your own project']);
+                return;
+            }
+        }
+    
+        // Get existing bug or create new one
+        $bug = $bugId ? Bug::findById($bugId) : new Bug();
+    
+        // Verify edit permissions
+        if ($bugId && $userRole > 2 && $bug->assignedToId != $userId && $bug->ownerId != $userId) {
+            $this->sendJsonResponse(['success' => false, 'message' => 'You do not have permission to edit this bug']);
+            return;
+        }
+    
+        // Update bug properties
+        $bug->projectId = $projectId;
+        $bug->ownerId = $bugId ? $bug->ownerId : $userId; // Preserve original owner
+        $bug->assignedToId = $assignedToId ?: null;
+        $bug->statusId = $statusId;
+        $bug->priorityId = $priorityId;
+        $bug->summary = $summary;
+        $bug->description = $description;
+        $bug->targetDate = $targetDate ?: null;
+    
+        // Handle closing and reopening bugs
+        if ($statusId == 3) { // Bug is being closed
+            $bug->dateClosed = $dateClosed ?: date('Y-m-d H:i:s');
+            $bug->fixDescription = $fixDescription;
+        } else { // Bug is open or being reopened
+            $bug->dateClosed = null;
+            $bug->fixDescription = null;
+        }
+    
+        // Set creation date for new bugs
+        if (!$bugId) {
+            $bug->dateRaised = date('Y-m-d H:i:s');
+        }
+    
+        try {
+            $bug->save();
+            $this->sendJsonResponse(['success' => true]);
+        } catch (\Exception $e) {
+            $this->sendJsonResponse(['success' => false, 'message' => $e->getMessage()]);
+        }
+    }
 
    /**
     * Sends JSON response to client
