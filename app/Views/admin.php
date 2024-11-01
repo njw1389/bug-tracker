@@ -438,7 +438,6 @@
                             <td><?php echo $user->ProjectId ? htmlspecialchars(App\Models\Project::findById($user->ProjectId)->Project) : 'None'; ?></td>
                             <td>
                                 <select onchange="updateUserProject(<?php echo $user->Id; ?>, this.value, this)">
-                                    <option value="">None</option>
                                     <?php foreach ($projects as $project): ?>
                                         <option value="<?php echo $project->Id; ?>" <?php echo $user->ProjectId == $project->Id ? 'selected' : ''; ?>>
                                             <?php echo htmlspecialchars($project->Project); ?>

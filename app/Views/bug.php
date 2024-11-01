@@ -866,6 +866,116 @@
                 });
             };
         });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // Bug form submission handler
+            document.getElementById("bugForm").onsubmit = function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const statusId = document.getElementById("statusId").value;
+                const originalStatusId = this.getAttribute('data-original-status') || statusId;
+                
+                // If bug is being closed (status changed to 3)
+                if (statusId === "3" && originalStatusId !== "3") {
+                    const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                    formData.append('dateClosed', currentDate);
+                }
+                
+                // If bug is being reopened (status changed from 3)
+                if (statusId !== "3" && originalStatusId === "3") {
+                    formData.append('dateClosed', '');
+                    formData.append('fixDescription', '');
+                }
+                
+                // Always include the fix description when status is Closed
+                if (statusId === "3") {
+                    const fixDescription = document.getElementById("fixDescription").value;
+                    if (!fixDescription.trim()) {
+                        alert("Fix description is required when closing a bug");
+                        return;
+                    }
+                    formData.append('fixDescription', fixDescription);
+                }
+
+                fetch('<?php echo url('bug/saveBug'); ?>', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert("Bug saved successfully");
+                        location.reload();
+                    } else {
+                        alert("Error saving bug: " + data.message);
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                    alert("An error occurred while saving the bug");
+                });
+            };
+
+            // Enhanced bug modal opening function
+            window.openEditBugModal = function(bug) {
+                document.getElementById("bugModalTitle").innerText = "Edit Bug";
+                document.getElementById("bugId").value = bug.id;
+                document.getElementById("bugProjectId").value = bug.projectId;
+                document.getElementById("summary").value = bug.summary;
+                document.getElementById("description").value = bug.description;
+                document.getElementById("assignedToId").value = bug.assignedToId || "";
+                document.getElementById("statusId").value = bug.statusId;
+                document.getElementById("priorityId").value = bug.priorityId;
+                
+                // Properly format and set the target date
+                if (bug.targetDate) {
+                    const targetDate = new Date(bug.targetDate);
+                    const formattedDate = targetDate.toISOString().split('T')[0];
+                    document.getElementById("targetDate").value = formattedDate;
+                } else {
+                    document.getElementById("targetDate").value = "";
+                }
+                
+                // Set fix description and handle field state
+                document.getElementById("fixDescription").value = bug.fixDescription || "";
+                handleFixDescriptionField(bug.statusId.toString());
+                
+                // Store original status for comparison
+                document.getElementById("bugForm").setAttribute('data-original-status', bug.statusId);
+                
+                openModal("bugModal");
+            };
+
+            // Enhanced fix description field handler
+            window.handleFixDescriptionField = function(statusId) {
+                const fixDescriptionField = document.getElementById("fixDescription");
+                if (statusId === "3") { // If status is Closed
+                    fixDescriptionField.disabled = false;
+                    fixDescriptionField.required = true;
+                    fixDescriptionField.classList.remove('disabled-field');
+                    fixDescriptionField.placeholder = "Required when closing a bug";
+                } else {
+                    fixDescriptionField.disabled = true;
+                    fixDescriptionField.required = false;
+                    fixDescriptionField.classList.add('disabled-field');
+                    fixDescriptionField.placeholder = "Only available when bug is closed";
+                    fixDescriptionField.value = '';
+                }
+            };
+
+            // Status change handler
+            document.getElementById("statusId").addEventListener('change', function() {
+                handleFixDescriptionField(this.value);
+                
+                if (this.value === "1") { // Unassigned
+                    document.getElementById("assignedToId").value = "";
+                } else if (this.value === "2" && !document.getElementById("assignedToId").value) { // Assigned
+                    alert("Please assign a user to this bug");
+                    this.value = "1";
+                }
+            });
+        });
     </script>
 </body>
 </html>
