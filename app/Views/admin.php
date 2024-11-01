@@ -1276,7 +1276,6 @@
             return date.toLocaleDateString();
         }
 
-
         function openEditBugModal(bug) {
             document.getElementById("bugModalTitle").innerText = "Edit Bug";
             document.getElementById("bugId").value = bug.id;
@@ -1297,7 +1296,6 @@
             openModal("bugModal");
         }
 
-        // Update openAddBugModal to initialize assigned users correctly
         function openAddBugModal() {
             document.getElementById("bugModalTitle").innerText = "Add Bug";
             document.getElementById("bugForm").reset();
